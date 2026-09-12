@@ -1,0 +1,16 @@
+<main>
+  <h1>{{ title() }}</h1>
+
+  <div class="botoes">
+    <button type="button" (click)="buscar()" [disabled]="loading()">GET /api/teste</button>
+    <button type="button" (click)="enviar()" [disabled]="loading()">POST /api/teste</button>
+  </div>
+
+  @if (loading()) {
+  <p>Carregando...</p>
+  } @else if (error()) {
+  <p class="erro">{{ error() }}</p>
+  } @else if (response()) {
+  <pre>{{ response() | json }}</pre>
+  }
+</main>
