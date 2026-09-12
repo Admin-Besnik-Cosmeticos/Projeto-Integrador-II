@@ -1,0 +1,29 @@
+{
+  "name": "projeto-integrador-2-workspace",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "install-all": "npm install --ignore-scripts && npm --prefix api install --ignore-scripts && npm --prefix database install --ignore-scripts && npm --prefix frontend install --ignore-scripts",
+    "dev": "npx concurrently -k -n API,WEB -c yellow,cyan \"npm run dev:api\" \"npm run dev:web\"",
+    "dev:api": "npx dotenv -e .env.development -- npx vercel dev --listen 3000",
+    "dev:web": "npm --prefix frontend run start:proxy -- --port 4200",
+    "db:migrate": "node database/scripts/migrate.mjs",
+    "type-check": "tsc --noEmit",
+    "type-check:api": "npm --prefix api run type-check"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "dotenv-cli": "^10.0.0",
+    "typescript": "^5.9.2",
+    "@vercel/node": "^5.1.4",
+    "yarn": "^1.22.22"
+  }
+}
