@@ -63,7 +63,7 @@ cp .env.example .env.development
 # aplicar o esquema no banco
 npm run db:migrate
 
-npm run dev
+npm run dev:all
 ```
 
 Fluxo esperado:
@@ -102,7 +102,7 @@ As funções ficam disponíveis em `http://localhost:3000/api/*`.
 ## Scripts da raiz
 
 - `npm run install-all`: instala dependencias da raiz, `api`, `database` e `frontend`.
-- `npm run dev`: sobe API e frontend em paralelo.
+- `npm run dev:all`: sobe API e frontend em paralelo.
 - `npm run dev:api`: sobe Vercel local em `3000` com `.env.development`.
 - `npm run dev:web`: sobe Angular em `4200` com proxy.
 - `npm run db:migrate`: aplica `database/migrations/*.sql` em ordem (ver `database/README.md`).
