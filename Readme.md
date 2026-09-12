@@ -47,7 +47,7 @@ Sistema de gerenciamento de estoque desenvolvido como Projeto Integrador II — 
 
 ### Pré-requisitos
 
-- Node.js 24.x (definido em `.nvmrc` — use `nvm use` para ativar; versao testada: `v24.21.0`)
+- Node.js 22.x (definido em `.nvmrc` — use `nvm use` para ativar)
 - npm >= 11 (versao testada: `11.19.1`; o npm 10 falha ao instalar o `frontend` no Node 24 com erro `edgesOut`)
 
 Observacao: em Windows, se o `vercel dev` apresentar erro de runtime (`UV_HANDLE_CLOSING`), faca fallback para Node 22.x apenas para rodar a API local.

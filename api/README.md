@@ -89,8 +89,8 @@ npm run dev:api
 
 - Usa o `.env.development` da raiz (via `dotenv-cli`).
 - Na primeira execução o `vercel dev` pede `vercel link` (login + vínculo do projeto).
-- Em Windows + Node 24, se der erro `UV_HANDLE_CLOSING`, faça fallback para Node 22
-  só para a API (ver `../Readme.md`).
+- Com Node 22 (padrão do projeto via `.nvmrc`), o `vercel dev` não apresenta o erro
+  `UV_HANDLE_CLOSING` que pode ocorrer no Windows + Node 24.
 
 ## Deploy
 
