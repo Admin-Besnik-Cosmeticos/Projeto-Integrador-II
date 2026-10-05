@@ -10,7 +10,6 @@ A Vercel mapeia **arquivo → rota** automaticamente:
 
 | Arquivo                | Rota          |
 |------------------------|---------------|
-| `api/teste/index.ts`   | `/api/teste`  |
 | `api/estoque/index.ts` | `/api/estoque`|
 | `api/auth/login/index.ts` | `/api/auth/login` (POST, DELETE) |
 | `api/auth/recuperacao/index.ts` | `/api/auth/recuperacao` (POST, PUT) |

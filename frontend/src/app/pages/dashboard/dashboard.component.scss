@@ -1,0 +1,11 @@
+.dashboard {
+  min-height: 100dvh;
+  display: grid;
+  place-content: center;
+  gap: 0.5rem;
+  padding: 2rem;
+  background: #fff;
+  color: #111;
+  font-family: Arial, Helvetica, sans-serif;
+  text-align: center;
+}
