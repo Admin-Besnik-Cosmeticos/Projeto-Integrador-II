@@ -15,10 +15,18 @@ function usage() {
 
 function parseArgs(argv) {
   const args = new Map();
-  for (const arg of argv) {
+  for (let i = 0; i < argv.length; i += 1) {
+    const arg = argv[i];
     if (!arg.startsWith('--')) continue;
     const [key, ...valueParts] = arg.slice(2).split('=');
-    args.set(key, valueParts.length > 0 ? valueParts.join('=') : 'true');
+    if (valueParts.length > 0) {
+      args.set(key, valueParts.join('='));
+    } else if (i + 1 < argv.length && !argv[i + 1].startsWith('--')) {
+      args.set(key, argv[i + 1]);
+      i += 1;
+    } else {
+      args.set(key, 'true');
+    }
   }
   return args;
 }
