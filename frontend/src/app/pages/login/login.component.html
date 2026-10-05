@@ -85,21 +85,16 @@
     </form>
   </section>
 
-  <aside class="brand-panel" aria-label="Besnik Cosméticos">
-    <div class="brand-panel__content">
-      <h2>Gerencie sua loja de cosméticos com inteligência e simplicidade.</h2>
-      <p>
-        Monitore suas vendas em tempo real, gerencie estoques e controle seus clientes de maneira
-        ágil, tudo em um único ecossistema.
-      </p>
-      <img src="/assets/logo.png" alt="Logo Besnik Cosméticos" />
-    </div>
-  </aside>
-
   @if (loading()) {
     <div class="login-loading" role="status" aria-live="polite">
-      <img src="/assets/logo.png" alt="Logo Besnik Cosméticos" />
-      <p>Entrando...</p>
+      <div class="login-loading__content">
+        <h2>Gerencie sua loja de cosméticos com inteligência e simplicidade.</h2>
+        <p>
+          Monitore suas vendas em tempo real, gerencie estoques e controle seus clientes de maneira
+          ágil, tudo em um único ecossistema.
+        </p>
+        <img src="/assets/logo-transparent.png" alt="Logo Besnik Cosméticos" />
+      </div>
     </div>
   }
 </main>
