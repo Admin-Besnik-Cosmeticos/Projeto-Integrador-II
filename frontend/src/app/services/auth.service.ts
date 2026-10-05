@@ -87,7 +87,15 @@ export class AuthService {
   }
 
   isAuthenticated(): boolean {
-    return Boolean(this.getToken() && this.getExpiresAt());
+    const token = this.getToken();
+    const expiresAt = this.getExpiresAt();
+
+    if (!token || !expiresAt) {
+      return false;
+    }
+
+    const expirationTime = Date.parse(expiresAt);
+    return Number.isFinite(expirationTime) && expirationTime > Date.now();
   }
 
   isAdmin(): boolean {
