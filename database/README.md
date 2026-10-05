@@ -9,7 +9,8 @@ database/
 ├── db.ts               # client SQL compartilhado (usado por services/ e api/)
 ├── migrations/         # histórico do esquema: 001_init.sql, 002_....sql, ...
 ├── scripts/
-│   └── migrate.mjs     # aplica as migrações em ordem no banco configurado
+│   ├── migrate.mjs       # aplica as migrações em ordem no banco configurado
+│   └── create-user.mjs   # cria usuário com senha em hash bcrypt
 └── package.json
 ```
 
@@ -54,6 +55,22 @@ npm run db:migrate
    crie uma nova corrigindo (ex.: `003_...sql`).
 4. Rode `npm run db:migrate` e confira a saída (`Aplicando ... / OK`).
 5. Commite o arquivo `.sql` junto com o código que depende dele.
+
+## Script `create-user.mjs`
+
+Cria um registro em `usuarios` sem armazenar senha em texto puro. A senha recebida
+é convertida para hash bcrypt com `BCRYPT_SALT_ROUNDS`.
+
+```bash
+# na raiz do repo
+npm run db:create-user -- --email usuario@example.com --senha 'senha-forte' --admin false
+```
+
+Parâmetros:
+
+- `--email`: obrigatório; normalizado para minúsculas.
+- `--senha`: obrigatória; mínimo de 8 caracteres; apenas o hash é salvo.
+- `--admin`: opcional; `true` ou `false`; padrão `false`.
 
 ### Esquema padrão
 

@@ -25,7 +25,7 @@ Sistema de gerenciamento de estoque desenvolvido como Projeto Integrador II — 
 /database/       # Banco Postgres/Neon: client, migrações e scripts — ver database/README.md
 ├── db.ts        #   client SQL compartilhado (services/ e api/ importam daqui)
 ├── migrations/  #   histórico do esquema (001_init.sql, 002_....sql, ...)
-├── scripts/     #   migrate.mjs (aplica as migrações em ordem)
+├── scripts/     #   migrate.mjs (aplica as migrações em ordem), create-user.mjs (cria usuário com hash bcrypt)
 /docs/           # Documentação do projeto
 /frontend/       # Aplicação Angular
 /services/       # Regras de negócio puras (sem HTTP) — ver services/README.md
@@ -106,6 +106,7 @@ As funções ficam disponíveis em `http://localhost:3000/api/*`.
 - `npm run dev:api`: sobe Vercel local em `3000` com `.env.development`.
 - `npm run dev:web`: sobe Angular em `4200` com proxy.
 - `npm run db:migrate`: aplica `database/migrations/*.sql` em ordem (ver `database/README.md`).
+- `npm run db:create-user`: cria usuário com senha armazenada somente como hash bcrypt (ver `database/README.md`).
 - `npm run type-check`: valida tipos de `api/`, `services/` e `database/`.
 
 ### Qualidade do frontend
