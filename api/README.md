@@ -12,7 +12,7 @@ A Vercel mapeia **arquivo → rota** automaticamente:
 |------------------------|---------------|
 | `api/teste/index.ts`   | `/api/teste`  |
 | `api/estoque/index.ts` | `/api/estoque`|
-| `api/auth/login/index.ts` | `/api/auth/login` (POST) |
+| `api/auth/login/index.ts` | `/api/auth/login` (POST, DELETE) |
 
 - Arquivos/pastas com prefixo `_` são **ignorados no roteamento**
   (por isso utilitários nunca devem morar aqui — vão para `services/` ou `database/`).

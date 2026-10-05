@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { authenticate, InvalidCredentialsError } from '../../../services/auth.service.js';
+import { authenticate, InvalidCredentialsError, InvalidTokenError, logout } from '../../../services/auth.service.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
@@ -12,14 +12,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return res.status(200).json({
           message: 'Login realizado com sucesso.',
           token: result.token,
+          expiresAt: result.expiresAt,
           user: result.user,
         });
       }
+      case 'DELETE': {
+        await logout(req.headers.authorization);
+        return res.status(200).json({ message: 'Logout realizado com sucesso.' });
+      }
       default:
-        res.setHeader('Allow', 'POST');
+        res.setHeader('Allow', 'POST, DELETE');
         return res.status(405).json({ erro: 'Metodo nao permitido' });
     }
   } catch (err) {
+    if (err instanceof InvalidTokenError) {
+      return res.status(401).json({ erro: 'Token ausente ou invalido.' });
+    }
     if (err instanceof InvalidCredentialsError) {
       return res.status(401).json({ erro: 'Credenciais invalidas.' });
     }

@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import jwt, { type SignOptions } from 'jsonwebtoken';
+import jwt, { type JwtPayload, type SignOptions } from 'jsonwebtoken';
 import { sql } from '../database/db.js';
 
 interface UsuarioAuthRow {
@@ -17,6 +17,7 @@ export interface AuthUser {
 
 export interface AuthResult {
   token: string;
+  expiresAt: string;
   user: AuthUser;
 }
 
@@ -25,6 +26,28 @@ export class InvalidCredentialsError extends Error {
     super(message);
     this.name = 'InvalidCredentialsError';
   }
+}
+
+export class InvalidTokenError extends Error {
+  constructor(message = 'Token ausente ou invalido.') {
+    super(message);
+    this.name = 'InvalidTokenError';
+  }
+}
+
+export async function logout(tokenInput: unknown): Promise<void> {
+  const token = typeof tokenInput === 'string' ? tokenInput.replace(/^Bearer\s+/i, '').trim() : '';
+
+  if (!token) {
+    throw new InvalidTokenError();
+  }
+
+  await sql`
+    UPDATE usuarios
+    SET bearer_token = NULL,
+        bearer_token_expires_at = NULL
+    WHERE bearer_token = ${token}
+  `;
 }
 
 export async function authenticate(emailInput: unknown, senhaInput: unknown): Promise<AuthResult> {
@@ -61,15 +84,23 @@ export async function authenticate(emailInput: unknown, senhaInput: unknown): Pr
   const payload = { id: usuario.id, admin: usuario.admin };
   const options: SignOptions = { expiresIn: expiresIn as SignOptions['expiresIn'] };
   const token = jwt.sign(payload, jwtSecret, options);
+  const decoded = jwt.decode(token) as JwtPayload | null;
+  const expiresAt = decoded?.exp ? new Date(decoded.exp * 1000).toISOString() : null;
+
+  if (!expiresAt) {
+    throw new Error('Falha ao calcular expiracao do token.');
+  }
 
   await sql`
     UPDATE usuarios
-    SET bearer_token = ${token}
+    SET bearer_token = ${token},
+        bearer_token_expires_at = ${expiresAt}
     WHERE id = ${usuario.id}
   `;
 
   return {
     token,
+    expiresAt,
     user: {
       id: usuario.id,
       email: usuario.email,
