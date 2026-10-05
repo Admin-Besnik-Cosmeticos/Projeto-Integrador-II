@@ -1,0 +1,3 @@
+ALTER TABLE usuarios
+ADD COLUMN IF NOT EXISTS bearer_token TEXT,
+ADD COLUMN IF NOT EXISTS bearer_token_expires_at TIMESTAMPTZ;

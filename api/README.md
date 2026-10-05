@@ -12,6 +12,7 @@ A Vercel mapeia **arquivo → rota** automaticamente:
 |------------------------|---------------|
 | `api/teste/index.ts`   | `/api/teste`  |
 | `api/estoque/index.ts` | `/api/estoque`|
+| `api/auth/login/index.ts` | `/api/auth/login` (POST, DELETE) |
 
 - Arquivos/pastas com prefixo `_` são **ignorados no roteamento**
   (por isso utilitários nunca devem morar aqui — vão para `services/` ou `database/`).
@@ -97,7 +98,7 @@ npm run dev:api
 - `vercel.json` define `installCommand` (raiz + `frontend` + `api`), `buildCommand`
   (build do Angular) e os `rewrites` (`/api/*` → funções, resto → SPA).
 - No painel da Vercel: **Root Directory `.`**, **Framework Preset `Other`**.
-- Variáveis obrigatórias em produção: `DATABASE_URL` (e `JWT_SECRET` quando houver auth).
+- Variáveis obrigatórias em produção: `DATABASE_URL` e, para auth, `JWT_SECRET`, `JWT_EXPIRES_IN`, `BCRYPT_SALT_ROUNDS`.
 - Lembrete: o deploy **não roda as migrações** — aplique com `npm run db:migrate`
   apontando para o banco correto antes de usar a API.
 
