@@ -13,6 +13,7 @@
     "dev:api": "npx dotenv -e .env.development -- npx vercel dev --listen 3000",
     "dev:web": "npm --prefix frontend run start:proxy -- --port 4200",
     "db:migrate": "node database/scripts/migrate.mjs",
+    "db:create-user": "node database/scripts/create-user.mjs",
     "type-check": "tsc --noEmit",
     "type-check:api": "npm --prefix api run type-check"
   },
