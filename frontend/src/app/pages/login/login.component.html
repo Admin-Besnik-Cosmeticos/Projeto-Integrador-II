@@ -1,0 +1,105 @@
+<main class="login-shell">
+  <section class="login-card" aria-labelledby="login-title">
+    <div class="login-card__banner">
+      <span class="login-card__icon" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="22"
+          height="22"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M6 6h15l-1.5 9h-12z" />
+          <path d="M6 6l-2-4H2" />
+          <circle cx="9" cy="20" r="1" />
+          <circle cx="18" cy="20" r="1" />
+        </svg>
+      </span>
+      <h1 id="login-title">Bem-vindo de volta</h1>
+      <p>Acesse o painel administrativo da sua loja</p>
+    </div>
+
+    <form class="login-card__form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="field">
+        <label for="email">E-mail</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          placeholder="admin@exemplo.com"
+          autocomplete="email"
+        />
+        @if (emailInvalid) {
+          <small class="field__error">
+            @if (form.controls.email.errors?.['required']) {
+              E-mail é obrigatório.
+            } @else if (form.controls.email.errors?.['email']) {
+              Informe um e-mail válido.
+            }
+          </small>
+        }
+      </div>
+
+      <div class="field">
+        <div class="field__label-row">
+          <label for="senha">Senha</label>
+          <a routerLink="/recuperacao">Esqueceu a senha?</a>
+        </div>
+        <div class="password-row">
+          <input
+            id="senha"
+            [type]="hidePassword() ? 'password' : 'text'"
+            formControlName="senha"
+            placeholder="********"
+            autocomplete="current-password"
+          />
+          <button
+            class="password-toggle"
+            type="button"
+            (click)="togglePassword()"
+            [attr.aria-label]="hidePassword() ? 'Mostrar senha' : 'Ocultar senha'"
+          >
+            {{ hidePassword() ? 'Ver' : 'Ocultar' }}
+          </button>
+        </div>
+        @if (senhaInvalid) {
+          <small class="field__error">Senha é obrigatória.</small>
+        }
+      </div>
+
+      <label class="remember">
+        <input type="checkbox" formControlName="lembrar" />
+        <span>Lembrar de mim</span>
+      </label>
+
+      @if (errorMessage()) {
+        <p class="form-error" role="alert">{{ errorMessage() }}</p>
+      }
+
+      <button class="submit" type="submit" [disabled]="form.invalid || loading()">
+        {{ loading() ? 'Entrando...' : 'Entrar' }}
+      </button>
+    </form>
+  </section>
+
+  <aside class="brand-panel" aria-label="Besnik Cosméticos">
+    <div class="brand-panel__content">
+      <h2>Gerencie sua loja de cosméticos com inteligência e simplicidade.</h2>
+      <p>
+        Monitore suas vendas em tempo real, gerencie estoques e controle seus clientes de maneira
+        ágil, tudo em um único ecossistema.
+      </p>
+      <img src="/assets/logo.png" alt="Logo Besnik Cosméticos" />
+    </div>
+  </aside>
+
+  @if (loading()) {
+    <div class="login-loading" role="status" aria-live="polite">
+      <img src="/assets/logo.png" alt="Logo Besnik Cosméticos" />
+      <p>Entrando...</p>
+    </div>
+  }
+</main>
