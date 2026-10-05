@@ -1,0 +1,2 @@
+ALTER TABLE usuarios
+ADD COLUMN IF NOT EXISTS bearer_token TEXT;

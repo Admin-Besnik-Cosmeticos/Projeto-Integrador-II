@@ -62,6 +62,12 @@ export async function authenticate(emailInput: unknown, senhaInput: unknown): Pr
   const options: SignOptions = { expiresIn: expiresIn as SignOptions['expiresIn'] };
   const token = jwt.sign(payload, jwtSecret, options);
 
+  await sql`
+    UPDATE usuarios
+    SET bearer_token = ${token}
+    WHERE id = ${usuario.id}
+  `;
+
   return {
     token,
     user: {
