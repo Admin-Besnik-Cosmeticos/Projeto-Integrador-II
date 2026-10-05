@@ -11,8 +11,8 @@ e devolvem a resposta. Ver também: `../Readme.md`, `../api/README.md`, `../data
 > **dados simples** e sinaliza erro com `throw`. Quem fala HTTP é a rota em `api/`.
 
 ```
-api/teste/index.ts          → entende HTTP (req.method, req.body, res.status().json())
-services/teste.service.ts   → entende negócio (listar posts, criar post)
+api/auth/login/index.ts     → entende HTTP (req.method, req.body, res.status().json())
+services/auth.service.ts    → entende negócio (autenticar, encerrar sessão, recuperar senha)
 database/db.ts              → entende banco (client SQL compartilhado)
 ```
 

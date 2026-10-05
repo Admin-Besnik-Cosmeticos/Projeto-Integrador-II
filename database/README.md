@@ -21,7 +21,7 @@ Exporta `sql`, o tagged template do `@neondatabase/serverless`:
 ```ts
 import { sql } from '../database/db.js';
 
-const posts = await sql`SELECT id, title FROM posts`;
+const rows = await sql`SELECT id, email FROM usuarios`;
 ```
 
 - Funciona em Vercel Functions **sem manter pool aberto** (HTTP, não TCP).

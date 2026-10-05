@@ -21,7 +21,6 @@ Sistema de gerenciamento de estoque desenvolvido como Projeto Integrador II — 
 
 ```
 /api/            # Vercel Serverless Functions (camada HTTP) — ver api/README.md
-├── teste/       #   rota /api/teste (GET, POST via switch em req.method)
 /database/       # Banco Postgres/Neon: client, migrações e scripts — ver database/README.md
 ├── db.ts        #   client SQL compartilhado (services/ e api/ importam daqui)
 ├── migrations/  #   histórico do esquema (001_init.sql, 002_....sql, ...)
@@ -139,8 +138,10 @@ Cada arquivo em `api/` atende **até 4 métodos** (`GET, POST, PUT, DELETE`) via
 `switch` em `req.method` — detalhe em [`api/README.md`](api/README.md).
 Com o limite gratuito de 12 funções, o projeto comporta até 48 operações.
 
-- `GET /api/teste`: lista posts, retorna `{ "message": "API funcionando", "posts": [...] }`.
-- `POST /api/teste`: cria post (`{ "title": "..." }`), retorna `201` com o post criado.
+- `POST /api/auth/login`: autentica usuário com e-mail e senha.
+- `DELETE /api/auth/login`: encerra a sessão do usuário.
+- `POST /api/auth/recuperacao`: solicita chave de recuperação/alteração de senha.
+- `PUT /api/auth/recuperacao`: redefine a senha com chave válida.
 
 No painel da Vercel, configure o projeto com:
 
