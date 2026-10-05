@@ -34,12 +34,12 @@ export class AuthError extends Error {
 export class AuthService {
   private readonly http = inject(HttpClient);
 
-  async login(email: string, senha: string): Promise<AuthLoginResponse> {
+  async login(email: string, senha: string, lembrar = false): Promise<AuthLoginResponse> {
     try {
       const response = await firstValueFrom(
         this.http.post<AuthLoginResponse>('/api/auth/login', { email, senha }),
       );
-      this.persistSession(response);
+      this.persistSession(response, lembrar);
       return response;
     } catch (error) {
       throw this.toAuthError(error);
@@ -63,7 +63,7 @@ export class AuthService {
 
   getToken(): string | null {
     try {
-      return localStorage.getItem(TOKEN_KEY);
+      return localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY);
     } catch {
       return null;
     }
@@ -71,7 +71,7 @@ export class AuthService {
 
   getExpiresAt(): string | null {
     try {
-      return localStorage.getItem(EXPIRES_AT_KEY);
+      return localStorage.getItem(EXPIRES_AT_KEY) ?? sessionStorage.getItem(EXPIRES_AT_KEY);
     } catch {
       return null;
     }
@@ -79,7 +79,7 @@ export class AuthService {
 
   getUser(): AuthUser | null {
     try {
-      const raw = localStorage.getItem(USER_KEY);
+      const raw = localStorage.getItem(USER_KEY) ?? sessionStorage.getItem(USER_KEY);
       return raw ? (JSON.parse(raw) as AuthUser) : null;
     } catch {
       return null;
@@ -94,16 +94,21 @@ export class AuthService {
     return this.getUser()?.admin === true;
   }
 
-  private persistSession(response: AuthLoginResponse): void {
-    localStorage.setItem(TOKEN_KEY, response.token);
-    localStorage.setItem(EXPIRES_AT_KEY, response.expiresAt);
-    localStorage.setItem(USER_KEY, JSON.stringify(response.user));
+  private persistSession(response: AuthLoginResponse, lembrar: boolean): void {
+    this.clearSession();
+    const storage = lembrar ? localStorage : sessionStorage;
+    storage.setItem(TOKEN_KEY, response.token);
+    storage.setItem(EXPIRES_AT_KEY, response.expiresAt);
+    storage.setItem(USER_KEY, JSON.stringify(response.user));
   }
 
   clearSession(): void {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(EXPIRES_AT_KEY);
     localStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(EXPIRES_AT_KEY);
+    sessionStorage.removeItem(USER_KEY);
   }
 
   private toAuthError(error: unknown): AuthError {

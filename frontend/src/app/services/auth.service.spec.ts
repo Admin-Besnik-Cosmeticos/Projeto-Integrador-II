@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 describe('AuthService', () => {
   beforeEach(() => {
     localStorage.clear();
+    sessionStorage.clear();
     TestBed.configureTestingModule({
       providers: [provideHttpClient(), provideHttpClientTesting()],
     });
@@ -19,7 +20,7 @@ describe('AuthService', () => {
     const service = TestBed.inject(AuthService);
     const http = TestBed.inject(HttpTestingController);
 
-    const promise = service.login('admin@exemplo.com', 'senha-forte');
+    const promise = service.login('admin@exemplo.com', 'senha-forte', true);
     const req = http.expectOne('/api/auth/login');
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({ email: 'admin@exemplo.com', senha: 'senha-forte' });
@@ -52,6 +53,31 @@ describe('AuthService', () => {
       code: 'invalid_credentials',
     });
     expect(service.getToken()).toBeNull();
+  });
+
+  it('uses sessionStorage when remember me is false', async () => {
+    const service = TestBed.inject(AuthService);
+    const http = TestBed.inject(HttpTestingController);
+
+    const promise = service.login('admin@exemplo.com', 'senha-forte', false);
+    const req = http.expectOne('/api/auth/login');
+    expect(req.request.method).toBe('POST');
+
+    req.flush({
+      token: 'jwt-token-session',
+      expiresAt: '2026-10-05T23:00:00.000Z',
+      user: { id: '1', email: 'admin@exemplo.com', admin: false },
+    });
+
+    await promise;
+    expect(sessionStorage.getItem('auth_token')).toBe('jwt-token-session');
+    expect(sessionStorage.getItem('auth_user')).toBe(
+      '{"id":"1","email":"admin@exemplo.com","admin":false}',
+    );
+    expect(localStorage.getItem('auth_token')).toBeNull();
+    expect(localStorage.getItem('auth_user')).toBeNull();
+    expect(service.getToken()).toBe('jwt-token-session');
+    expect(service.isAdmin()).toBe(false);
   });
 
   it('logout clears local session even if backend call fails', async () => {

@@ -15,11 +15,12 @@
 }
 
 .login-card {
-  width: min(560px, 100%);
-  padding: 2rem;
+  width: min(760px, 100%);
+  min-height: min(620px, calc(100dvh - 4rem));
+  padding: 2.5rem;
   background: #fff;
   border: 1px solid rgba(155, 77, 171, 0.14);
-  border-radius: 10px;
+  border-radius: 14px;
   box-shadow: 0 18px 60px rgba(55, 24, 65, 0.08);
 }
 
@@ -57,7 +58,7 @@
 
 .login-card__form {
   display: grid;
-  gap: 1rem;
+  gap: 1.2rem;
 }
 
 .field {

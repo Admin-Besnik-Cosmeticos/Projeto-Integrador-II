@@ -79,13 +79,18 @@
         <p class="form-error" role="alert">{{ errorMessage() }}</p>
       }
 
-      <button class="submit" type="submit" [disabled]="form.invalid || loading()">
-        {{ loading() ? 'Entrando...' : 'Entrar' }}
+      <button
+        class="submit"
+        type="submit"
+        [disabled]="form.invalid || loading() || showTransition()"
+      >
+        {{ loading() ? 'Carregando...' : 'Entrar' }}
       </button>
+
     </form>
   </section>
 
-  @if (loading()) {
+  @if (showTransition()) {
     <div class="login-loading" role="status" aria-live="polite">
       <div class="login-loading__content">
         <h2>Gerencie sua loja de cosméticos com inteligência e simplicidade.</h2>

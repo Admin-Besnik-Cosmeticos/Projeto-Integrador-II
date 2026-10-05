@@ -16,6 +16,7 @@ export class LoginComponent {
   private readonly router = inject(Router);
 
   protected readonly loading = signal(false);
+  protected readonly showTransition = signal(false);
   protected readonly submitted = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly hidePassword = signal(true);
@@ -41,7 +42,7 @@ export class LoginComponent {
   }
 
   protected async submit(): Promise<void> {
-    if (this.loading()) {
+    if (this.loading() || this.showTransition()) {
       return;
     }
 
@@ -54,11 +55,16 @@ export class LoginComponent {
     }
 
     this.loading.set(true);
-    const { email, senha } = this.form.getRawValue();
+    this.errorMessage.set(null);
+    const { email, senha, lembrar } = this.form.getRawValue();
 
     try {
-      await this.authService.login(email.trim(), senha);
-      await this.router.navigate(['/dashboard']);
+      await this.authService.login(email.trim(), senha, lembrar);
+      this.loading.set(false);
+      this.showTransition.set(true);
+      setTimeout(() => {
+        void this.router.navigate(['/dashboard']);
+      }, 800);
     } catch (error) {
       if (error instanceof AuthError && error.code === 'invalid_credentials') {
         this.errorMessage.set('Credenciais invalidas.');

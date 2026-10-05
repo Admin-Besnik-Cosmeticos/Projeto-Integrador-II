@@ -78,11 +78,18 @@ describe('LoginComponent', () => {
     submit.click();
     fixture.detectChanges();
 
-    expect(fixture.nativeElement.querySelector('.login-loading')).toBeTruthy();
+    expect(fixture.nativeElement.textContent).toContain('Carregando...');
+    expect(fixture.nativeElement.querySelector('.login-loading')).toBeNull();
     expect(submit.disabled).toBe(true);
 
     resolveLogin!(successResponse);
     await fixture.whenStable();
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.querySelector('.login-loading')).toBeTruthy();
+    expect(navigateCalls.length).toBe(0);
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
     fixture.detectChanges();
 
     expect(navigateCalls[0][0]).toEqual(['/dashboard']);
