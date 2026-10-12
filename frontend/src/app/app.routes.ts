@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { authGuard, loginGuard } from './auth.guard';
 import { LoginComponent } from './pages/login/login.component';
+import { RecuperacaoSenhaComponent } from './pages/recuperacao-senha/recuperacao-senha.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { ProdutosComponent } from './pages/produtos/produtos.component';
 import { ClientesComponent } from './pages/clientes/clientes.component';
@@ -11,6 +12,7 @@ import { AppLayoutComponent } from './layouts/app-layout/app-layout.component';
 export const routes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
   { path: 'login', component: LoginComponent, canActivate: [loginGuard] },
+  { path: 'recuperacao', component: RecuperacaoSenhaComponent },
   {
     path: '',
     component: AppLayoutComponent,

@@ -97,4 +97,62 @@ describe('AuthService', () => {
     expect(service.getToken()).toBeNull();
     expect(service.getUser()).toBeNull();
   });
+
+  it('requests password recovery with email and tipo', async () => {
+    const service = TestBed.inject(AuthService);
+    const http = TestBed.inject(HttpTestingController);
+
+    const promise = service.solicitarRecuperacao('admin@exemplo.com');
+    const req = http.expectOne('/api/auth/recuperacao');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ email: 'admin@exemplo.com', tipo: 'recuperacao' });
+
+    req.flush({ message: 'Se o email existir, enviaremos as instrucoes.' });
+    await expect(promise).resolves.toEqual({
+      message: 'Se o email existir, enviaremos as instrucoes.',
+    });
+  });
+
+  it('resets the password with email, tipo, chave and novaSenha', async () => {
+    const service = TestBed.inject(AuthService);
+    const http = TestBed.inject(HttpTestingController);
+
+    const promise = service.redefinirSenha('admin@exemplo.com', '12345678', 'novaSenha1');
+    const req = http.expectOne('/api/auth/recuperacao');
+    expect(req.request.method).toBe('PUT');
+    expect(req.request.body).toEqual({
+      email: 'admin@exemplo.com',
+      tipo: 'recuperacao',
+      chave: '12345678',
+      novaSenha: 'novaSenha1',
+    });
+
+    req.flush({ message: 'Senha alterada com sucesso.' });
+    await expect(promise).resolves.toEqual({ message: 'Senha alterada com sucesso.' });
+  });
+
+  it('maps recovery network failure to a typed error', async () => {
+    const service = TestBed.inject(AuthService);
+    const http = TestBed.inject(HttpTestingController);
+
+    const promise = service.solicitarRecuperacao('admin@exemplo.com');
+    const req = http.expectOne('/api/auth/recuperacao');
+    req.error(new ProgressEvent('error'));
+
+    await expect(promise).rejects.toMatchObject({ code: 'network_error' });
+  });
+
+  it('maps an invalid recovery code response to the invalid_code error', async () => {
+    const service = TestBed.inject(AuthService);
+    const http = TestBed.inject(HttpTestingController);
+
+    const promise = service.redefinirSenha('admin@exemplo.com', '00000000', 'novaSenha1');
+    const req = http.expectOne('/api/auth/recuperacao');
+    req.flush({ erro: 'Chave invalida ou expirada.' }, { status: 400, statusText: 'Bad Request' });
+
+    await expect(promise).rejects.toMatchObject({
+      code: 'invalid_code',
+      message: 'Chave invalida ou expirada.',
+    });
+  });
 });

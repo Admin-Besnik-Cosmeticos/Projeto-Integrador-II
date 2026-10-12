@@ -73,6 +73,23 @@ function createRecoveryKey(): string {
   return randomInt(0, 100000000).toString().padStart(8, '0');
 }
 
+async function dispatchRecoveryEmail(
+  email: string,
+  chave: string,
+  tipo: RecoveryTipo,
+): Promise<void> {
+  try {
+    const result = await sendPasswordRecoveryEmail({ email, chave, tipo });
+    if (!result.sent) {
+      console.warn(
+        `[auth.service] email de recuperacao nao enviado (provider=${result.provider ?? 'disabled'}).`,
+      );
+    }
+  } catch (error) {
+    console.error('[auth.service] falha ao enviar email de recuperacao:', error);
+  }
+}
+
 export async function requestPasswordRecovery(
   emailInput: unknown,
   tipoInput: unknown,
@@ -127,7 +144,7 @@ export async function requestPasswordRecovery(
       WHERE id = ${usuario.id}
     `;
 
-    await sendPasswordRecoveryEmail({ email, chave, tipo });
+    await dispatchRecoveryEmail(email, chave, tipo);
     return { message: 'Chave de confirmacao enviada.' };
   }
 
@@ -150,7 +167,7 @@ export async function requestPasswordRecovery(
       WHERE id = ${usuario.id}
     `;
 
-    await sendPasswordRecoveryEmail({ email, chave, tipo });
+    await dispatchRecoveryEmail(email, chave, tipo);
   }
 
   return { message: 'Se o email existir, enviaremos as instrucoes para redefinicao de senha.' };

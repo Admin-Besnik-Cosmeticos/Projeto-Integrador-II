@@ -30,6 +30,27 @@ export class AuthError extends Error {
   }
 }
 
+export type RecuperacaoTipo = 'recuperacao' | 'alteracao';
+
+export type RecuperacaoErrorCode =
+  'invalid_email' | 'invalid_code' | 'weak_password' | 'network_error' | 'unexpected_error';
+
+export class RecuperacaoError extends Error {
+  constructor(
+    message: string,
+    readonly code: RecuperacaoErrorCode,
+  ) {
+    super(message);
+    this.name = 'RecuperacaoError';
+  }
+}
+
+export interface RecuperacaoResponse {
+  message: string;
+}
+
+const RECUPERACAO_ENDPOINT = '/api/auth/recuperacao';
+
 @Injectable({ providedIn: 'root' })
 export class AuthService {
   private readonly http = inject(HttpClient);
@@ -58,6 +79,39 @@ export class AuthService {
       }
     } finally {
       this.clearSession();
+    }
+  }
+
+  async solicitarRecuperacao(
+    email: string,
+    tipo: RecuperacaoTipo = 'recuperacao',
+  ): Promise<RecuperacaoResponse> {
+    try {
+      return await firstValueFrom(
+        this.http.post<RecuperacaoResponse>(RECUPERACAO_ENDPOINT, { email, tipo }),
+      );
+    } catch (error) {
+      throw this.toRecuperacaoError(error, 'invalid_email');
+    }
+  }
+
+  async redefinirSenha(
+    email: string,
+    chave: string,
+    novaSenha: string,
+    tipo: RecuperacaoTipo = 'recuperacao',
+  ): Promise<RecuperacaoResponse> {
+    try {
+      return await firstValueFrom(
+        this.http.put<RecuperacaoResponse>(RECUPERACAO_ENDPOINT, {
+          email,
+          tipo,
+          chave,
+          novaSenha,
+        }),
+      );
+    } catch (error) {
+      throw this.toRecuperacaoError(error, 'invalid_code');
     }
   }
 
@@ -135,5 +189,29 @@ export class AuthService {
     }
 
     return new AuthError('Nao foi possivel realizar o login.', 'unexpected_error');
+  }
+
+  private toRecuperacaoError(error: unknown, fallbackCode: RecuperacaoErrorCode): RecuperacaoError {
+    if (error instanceof RecuperacaoError) {
+      return error;
+    }
+
+    if (error instanceof HttpErrorResponse) {
+      if (error.status === 0) {
+        return new RecuperacaoError('Nao foi possivel conectar ao servidor.', 'network_error');
+      }
+
+      const body = error.error as { erro?: unknown } | null;
+      const message =
+        body && typeof body.erro === 'string' ? body.erro : 'Nao foi possivel concluir a operacao.';
+
+      if (message.toLowerCase().includes('senha')) {
+        return new RecuperacaoError(message, 'weak_password');
+      }
+
+      return new RecuperacaoError(message, fallbackCode);
+    }
+
+    return new RecuperacaoError('Nao foi possivel concluir a operacao.', 'unexpected_error');
   }
 }

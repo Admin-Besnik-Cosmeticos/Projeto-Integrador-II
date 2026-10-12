@@ -1,0 +1,231 @@
+<main class="recuperacao-shell">
+  <section class="recuperacao-card" aria-labelledby="recuperacao-title">
+    <div class="recuperacao-card__banner">
+      <span class="recuperacao-card__icon" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="22"
+          height="22"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <rect x="3" y="11" width="18" height="10" rx="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+      </span>
+      <h1 id="recuperacao-title">
+        @switch (etapa()) {
+          @case ('email') {
+            Esqueceu a senha?
+          }
+          @case ('codigo') {
+            Confirme o código
+          }
+          @case ('senha') {
+            Defina uma nova senha
+          }
+          @case ('sucesso') {
+            Senha redefinida!
+          }
+        }
+      </h1>
+      <p>
+        @switch (etapa()) {
+          @case ('email') {
+            Informe seu e-mail para receber o código de recuperação.
+          }
+          @case ('codigo') {
+            Enviamos um código de 8 caracteres para {{ emailInformado }}.
+          }
+          @case ('senha') {
+            Crie uma nova senha para acessar sua conta.
+          }
+          @case ('sucesso') {
+            Sua senha foi alterada com sucesso.
+          }
+        }
+      </p>
+    </div>
+
+    @if (etapa() === 'email') {
+      <form
+        class="recuperacao-card__form"
+        [formGroup]="emailForm"
+        (ngSubmit)="solicitarCodigo()"
+        novalidate
+      >
+        <div class="field">
+          <label for="recuperacao-email">E-mail</label>
+          <input
+            id="recuperacao-email"
+            type="email"
+            formControlName="email"
+            placeholder="admin@exemplo.com"
+            autocomplete="email"
+          />
+          @if (emailInvalid) {
+            <small class="field__error">
+              @if (emailForm.controls.email.errors?.['required']) {
+                E-mail é obrigatório.
+              } @else if (emailForm.controls.email.errors?.['email']) {
+                Informe um e-mail válido.
+              }
+            </small>
+          }
+        </div>
+
+        @if (errorMessage()) {
+          <p class="form-error" role="alert">{{ errorMessage() }}</p>
+        }
+
+        <button class="submit" type="submit" [disabled]="loading()">
+          {{ loading() ? 'Enviando...' : 'Enviar código' }}
+        </button>
+
+        <a class="recuperacao-card__link" routerLink="/login">Voltar para o login</a>
+      </form>
+    }
+
+    @if (etapa() === 'codigo') {
+      <div class="recuperacao-card__form">
+        <app-codigo-input
+          [length]="codigoTamanho"
+          [value]="codigo()"
+          [disabled]="loading()"
+          [invalid]="codigoInvalido()"
+          (valueChange)="atualizarCodigo($event)"
+        />
+
+        @if (codigoInvalido()) {
+          <small class="field__error" role="alert">
+            Código inválido. Verifique os 8 caracteres recebidos por e-mail.
+          </small>
+        }
+
+        @if (errorMessage()) {
+          <p class="form-error" role="alert">{{ errorMessage() }}</p>
+        }
+
+        <button class="submit" type="button" [disabled]="loading()" (click)="confirmarCodigo()">
+          {{ loading() ? 'Confirmando...' : 'Confirmar código' }}
+        </button>
+
+        <div class="recuperacao-card__actions">
+          <button
+            class="recuperacao-card__link recuperacao-card__link--button"
+            type="button"
+            [disabled]="loading()"
+            (click)="solicitarCodigo()"
+          >
+            Reenviar código
+          </button>
+          <button
+            class="recuperacao-card__link recuperacao-card__link--button"
+            type="button"
+            [disabled]="loading()"
+            (click)="alterarEmail()"
+          >
+            Usar outro e-mail
+          </button>
+        </div>
+      </div>
+    }
+
+    @if (etapa() === 'senha') {
+      <form
+        class="recuperacao-card__form"
+        [formGroup]="senhaForm"
+        (ngSubmit)="redefinirSenha()"
+        novalidate
+      >
+        <div class="field">
+          <label for="nova-senha">Nova senha</label>
+          <div class="password-row">
+            <input
+              id="nova-senha"
+              [type]="hideNovaSenha() ? 'password' : 'text'"
+              formControlName="novaSenha"
+              placeholder="********"
+              autocomplete="new-password"
+            />
+            <button
+              class="password-toggle"
+              type="button"
+              (click)="toggleNovaSenha()"
+              [attr.aria-label]="hideNovaSenha() ? 'Mostrar senha' : 'Ocultar senha'"
+            >
+              {{ hideNovaSenha() ? 'Ver' : 'Ocultar' }}
+            </button>
+          </div>
+          @if (novaSenhaInvalid) {
+            <small class="field__error">
+              @if (senhaForm.controls.novaSenha.errors?.['required']) {
+                Nova senha é obrigatória.
+              } @else if (senhaForm.controls.novaSenha.errors?.['minlength']) {
+                A nova senha deve ter pelo menos 8 caracteres.
+              }
+            </small>
+          }
+        </div>
+
+        <div class="field">
+          <label for="confirmar-senha">Confirmar nova senha</label>
+          <div class="password-row">
+            <input
+              id="confirmar-senha"
+              [type]="hideConfirmarSenha() ? 'password' : 'text'"
+              formControlName="confirmarSenha"
+              placeholder="********"
+              autocomplete="new-password"
+            />
+            <button
+              class="password-toggle"
+              type="button"
+              (click)="toggleConfirmarSenha()"
+              [attr.aria-label]="hideConfirmarSenha() ? 'Mostrar senha' : 'Ocultar senha'"
+            >
+              {{ hideConfirmarSenha() ? 'Ver' : 'Ocultar' }}
+            </button>
+          </div>
+          @if (confirmarSenhaInvalid) {
+            <small class="field__error">Confirmação de senha é obrigatória.</small>
+          } @else if (senhasDiferentes) {
+            <small class="field__error">As senhas informadas não são iguais.</small>
+          }
+        </div>
+
+        @if (errorMessage()) {
+          <p class="form-error" role="alert">{{ errorMessage() }}</p>
+        }
+
+        <button class="submit" type="submit" [disabled]="loading()">
+          {{ loading() ? 'Salvando...' : 'Redefinir senha' }}
+        </button>
+      </form>
+    }
+
+    @if (etapa() === 'sucesso') {
+      <div class="recuperacao-card__form recuperacao-card__success">
+        <span class="recuperacao-card__check" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            width="30"
+            height="30"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.4"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </span>
+        <p>Você já pode acessar o painel com a sua nova senha.</p>
+        <button class="submit" type="button" (click)="voltarAoLogin()">Voltar para o login</button>
+      </div>
+    }
+  </section>
+</main>
