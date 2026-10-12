@@ -1,0 +1,49 @@
+.codigo {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.codigo__input {
+  width: 3rem;
+  height: 3.4rem;
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #4f2558;
+  background: #fff;
+  border: 1px solid #ded7e4;
+  border-radius: 8px;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.codigo__input:focus {
+  border-color: #a24dad;
+  box-shadow: 0 0 0 3px rgba(162, 77, 173, 0.14);
+}
+
+.codigo__input:disabled {
+  background: #f4f0f5;
+  cursor: not-allowed;
+}
+
+.codigo--invalid .codigo__input {
+  border-color: #b00020;
+  box-shadow: 0 0 0 3px rgba(176, 0, 32, 0.12);
+}
+
+@media (max-width: 640px) {
+  .codigo {
+    gap: 0.35rem;
+  }
+
+  .codigo__input {
+    width: 2.35rem;
+    height: 2.9rem;
+    font-size: 1.1rem;
+  }
+}

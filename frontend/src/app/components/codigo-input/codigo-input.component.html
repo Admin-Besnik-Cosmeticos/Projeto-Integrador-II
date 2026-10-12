@@ -1,0 +1,25 @@
+<div
+  class="codigo"
+  [class.codigo--invalid]="invalid()"
+  role="group"
+  aria-label="Código de confirmação"
+>
+  @for (digit of digits(); track $index) {
+    <input
+      #digit
+      class="codigo__input"
+      type="text"
+      inputmode="numeric"
+      maxlength="1"
+      autocomplete="one-time-code"
+      [value]="digit"
+      [disabled]="disabled()"
+      [attr.aria-invalid]="invalid()"
+      [attr.aria-label]="'Dígito ' + ($index + 1)"
+      (input)="onInput($index, $event)"
+      (keydown)="onKeydown($index, $event)"
+      (paste)="onPaste($event)"
+      (focus)="onFocus($event)"
+    />
+  }
+</div>
