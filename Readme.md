@@ -154,6 +154,13 @@ Variaveis de ambiente obrigatorias para producao:
 - `DATABASE_URL`
 - `JWT_SECRET`
 
+Para o envio de e-mail de recuperacao de senha (Gmail):
+
+- `EMAIL_PROVIDER` (`gmail`; use `disabled` para desligar o envio)
+- `EMAIL_USER`
+- `EMAIL_APP_PASSWORD` (Senha de App do Gmail, nao a senha da conta)
+- `EMAIL_FROM` (opcional; padrao `Besnik Cosméticos <EMAIL_USER>`)
+
 ## Equipe
 
 Projeto Integrador II — UNIVESP | Turma 4 | Grupo 9
