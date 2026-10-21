@@ -1,15 +1,23 @@
-.page-placeholder {
-  background: transparent;
+:host {
+  display: block;
+  font-family: Arial, Helvetica, sans-serif;
   color: #4f2558;
 }
 
-.page-placeholder h1 {
-  margin: 0 0 0.5rem;
+.clientes h1 {
+  margin: 0 0 0.35rem;
   font-size: 2rem;
   font-weight: 800;
+  color: #4f2558;
 }
 
-.page-placeholder p {
-  margin: 0;
+.clientes__cabecalho p {
+  margin: 0 0 1.5rem;
   color: #8d7396;
+}
+
+.clientes__feedback {
+  margin: 1rem 0 0;
+  color: #8d7396;
+  font-size: 0.85rem;
 }
