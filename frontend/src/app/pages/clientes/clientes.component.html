@@ -1,4 +1,21 @@
-<section class="page-placeholder">
-  <h1>Clientes</h1>
-  <p>Placeholder da página de clientes.</p>
+<section class="clientes">
+  <header class="clientes__cabecalho">
+    <h1>Clientes</h1>
+    <p>Gerencie as clientes da loja Besnik Cosméticos.</p>
+  </header>
+
+  <app-tabela
+    [colunas]="colunas"
+    [dados]="clientes"
+    [acoes]="acoes"
+    mensagemVazio="Nenhuma cliente encontrada"
+    descricaoVazio="Cadastre a primeira cliente para vê-la aqui."
+    (acaoSelecionada)="registrarAcao($event)"
+  />
+
+  @if (acaoRegistrada()) {
+    <p class="clientes__feedback" role="status" aria-live="polite">
+      Ação registrada: {{ acaoRegistrada() }}
+    </p>
+  }
 </section>
