@@ -40,6 +40,9 @@ em ordem alfabética/numérica**. O `migrate.mjs`:
 ```bash
 # na raiz do repo (usa o DATABASE_URL do .env.development)
 npm run db:migrate
+
+# contra produção (usa o DATABASE_URL do .env.production)
+npm run db:migrate:prod
 ```
 
 > As migrações **não rodam sozinhas**: nem o `vercel dev`, nem o deploy executam

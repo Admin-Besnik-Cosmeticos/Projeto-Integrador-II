@@ -4,15 +4,20 @@ import { fileURLToPath } from 'node:url';
 import { config } from 'dotenv';
 import { Pool } from '@neondatabase/serverless';
 
-// Carrega .env.development (dev) ou .env.local, sem exigir dotenv-cli.
+// Carrega .env.develop/prod conforme --env (dev padrao), sem exigir dotenv-cli.
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..');
-config({ path: join(root, '.env.development') });
+const usaProducao = process.argv.includes('--env') &&
+  (process.argv[process.argv.indexOf('--env') + 1] === 'prod' ||
+    process.argv[process.argv.indexOf('--env') + 1] === 'production');
+const arquivoEnv = usaProducao ? '.env.production' : '.env.development';
+console.log(`Ambiente: ${usaProducao ? 'producao' : 'development'} (${arquivoEnv})`);
+config({ path: join(root, arquivoEnv) });
 config({ path: join(root, '.env.local'), override: false });
 
 const databaseUrl = process.env.DATABASE_URL;
 if (!databaseUrl) {
-  console.error('DATABASE_URL nao definida. Crie .env.development a partir de .env.example');
+  console.error(`DATABASE_URL nao definida. Crie ${arquivoEnv} a partir de .env.example`);
   process.exit(1);
 }
 
