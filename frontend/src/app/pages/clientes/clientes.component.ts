@@ -1,4 +1,6 @@
-import { Component, signal } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { ModalComponent } from '../../components/modal/modal.component';
 import {
   TabelaAcao,
   TabelaAcaoEvento,
@@ -17,11 +19,13 @@ export interface Cliente {
 
 @Component({
   selector: 'app-clientes',
-  imports: [TabelaComponent],
+  imports: [TabelaComponent, ModalComponent, ReactiveFormsModule],
   templateUrl: './clientes.component.html',
   styleUrl: './clientes.component.scss',
 })
 export class ClientesComponent {
+  private readonly fb = inject(FormBuilder);
+
   protected readonly colunas: TabelaColuna<Cliente>[] = [
     { titulo: 'Nome', campo: 'nome', tipo: 'destaque' },
     { titulo: 'E-mail', campo: 'email' },
@@ -39,6 +43,36 @@ export class ClientesComponent {
     { id: 'visualizar', rotulo: 'Visualizar cliente', icone: 'visualizar' },
     { id: 'editar', rotulo: 'Editar cliente', icone: 'editar' },
     { id: 'excluir', rotulo: 'Excluir cliente', icone: 'excluir' },
+  ];
+
+  protected readonly estados: string[] = [
+    'AC',
+    'AL',
+    'AP',
+    'AM',
+    'BA',
+    'CE',
+    'DF',
+    'ES',
+    'GO',
+    'MA',
+    'MT',
+    'MS',
+    'MG',
+    'PA',
+    'PB',
+    'PR',
+    'PE',
+    'PI',
+    'RJ',
+    'RN',
+    'RS',
+    'RO',
+    'RR',
+    'SC',
+    'SP',
+    'SE',
+    'TO',
   ];
 
   protected readonly clientes: Cliente[] = [
@@ -77,6 +111,62 @@ export class ClientesComponent {
   ];
 
   protected readonly acaoRegistrada = signal('');
+  protected readonly modalAberto = signal(false);
+  protected readonly salvando = signal(false);
+  protected readonly enviado = signal(false);
+
+  protected readonly form = this.fb.nonNullable.group({
+    nome: ['', [Validators.required]],
+    email: ['', [Validators.required, Validators.email]],
+    telefone: [''],
+    cpf: [''],
+    endereco: [''],
+    cidade: [''],
+    estado: [''],
+  });
+
+  protected get nomeInvalid(): boolean {
+    const campo = this.form.controls.nome;
+    return campo.invalid && (campo.touched || this.enviado());
+  }
+
+  protected get emailInvalid(): boolean {
+    const campo = this.form.controls.email;
+    return campo.invalid && (campo.touched || this.enviado());
+  }
+
+  protected abrirModal(): void {
+    this.enviado.set(false);
+    this.modalAberto.set(true);
+  }
+
+  protected fecharModal(): void {
+    if (this.salvando()) {
+      return;
+    }
+    this.modalAberto.set(false);
+  }
+
+  protected async salvarCliente(): Promise<void> {
+    if (this.salvando()) {
+      return;
+    }
+
+    this.enviado.set(true);
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    this.salvando.set(true);
+    await new Promise((resolve) => setTimeout(resolve, 600));
+    const { nome } = this.form.getRawValue();
+    this.salvando.set(false);
+    this.modalAberto.set(false);
+    this.acaoRegistrada.set(`Cliente cadastrada (simulação): ${nome}`);
+    this.form.reset();
+    this.enviado.set(false);
+  }
 
   protected registrarAcao(evento: TabelaAcaoEvento<Cliente>): void {
     this.acaoRegistrada.set(`${evento.acao} — ${evento.registro.nome}`);

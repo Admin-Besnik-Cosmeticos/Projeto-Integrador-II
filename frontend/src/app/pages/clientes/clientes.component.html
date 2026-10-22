@@ -1,7 +1,26 @@
 <section class="clientes">
   <header class="clientes__cabecalho">
-    <h1>Clientes</h1>
-    <p>Gerencie as clientes da loja Besnik Cosméticos.</p>
+    <div class="clientes__titulos">
+      <h1>Clientes</h1>
+      <p>Gerencie as clientes da loja Besnik Cosméticos.</p>
+    </div>
+
+    <button class="clientes__novo" type="button" (click)="abrirModal()">
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        width="14"
+        height="14"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.4"
+        stroke-linecap="round"
+      >
+        <path d="M12 5v14" />
+        <path d="M5 12h14" />
+      </svg>
+      Novo Cliente
+    </button>
   </header>
 
   <app-tabela
@@ -15,7 +34,131 @@
 
   @if (acaoRegistrada()) {
     <p class="clientes__feedback" role="status" aria-live="polite">
-      Ação registrada: {{ acaoRegistrada() }}
+      {{ acaoRegistrada() }}
     </p>
   }
+
+  <app-modal
+    titulo="Novo Cliente"
+    [aberto]="modalAberto()"
+    [carregando]="salvando()"
+    (fechar)="fecharModal()"
+  >
+    <form class="formulario-cliente" [formGroup]="form" (ngSubmit)="salvarCliente()" novalidate>
+      <div class="formulario-cliente__campo">
+        <label class="formulario-cliente__rotulo" for="campo-nome">Nome Completo</label>
+        <input
+          class="formulario-cliente__entrada"
+          id="campo-nome"
+          type="text"
+          formControlName="nome"
+          placeholder="Ex: Ana Paula Silva"
+          [attr.aria-invalid]="nomeInvalid ? 'true' : null"
+          [attr.aria-describedby]="nomeInvalid ? 'erro-nome' : null"
+        />
+        @if (nomeInvalid) {
+          <p class="formulario-cliente__erro" id="erro-nome">Informe o nome da cliente.</p>
+        }
+      </div>
+
+      <div class="formulario-cliente__linha">
+        <div class="formulario-cliente__campo">
+          <label class="formulario-cliente__rotulo" for="campo-email">Email</label>
+          <input
+            class="formulario-cliente__entrada"
+            id="campo-email"
+            type="email"
+            formControlName="email"
+            placeholder="exemplo&#64;gmail.com"
+            [attr.aria-invalid]="emailInvalid ? 'true' : null"
+            [attr.aria-describedby]="emailInvalid ? 'erro-email' : null"
+          />
+          @if (emailInvalid) {
+            <p class="formulario-cliente__erro" id="erro-email">Informe um email válido.</p>
+          }
+        </div>
+
+        <div class="formulario-cliente__campo">
+          <label class="formulario-cliente__rotulo" for="campo-telefone">Telefone</label>
+          <input
+            class="formulario-cliente__entrada"
+            id="campo-telefone"
+            type="tel"
+            formControlName="telefone"
+            placeholder="(11) 99999-9999"
+          />
+        </div>
+      </div>
+
+      <div class="formulario-cliente__campo formulario-cliente__campo--metade">
+        <label class="formulario-cliente__rotulo" for="campo-cpf">CPF</label>
+        <input
+          class="formulario-cliente__entrada"
+          id="campo-cpf"
+          type="text"
+          formControlName="cpf"
+          placeholder="000.000.000-00"
+        />
+      </div>
+
+      <p class="formulario-cliente__secao">Endereço de Entrega</p>
+
+      <div class="formulario-cliente__campo">
+        <label class="formulario-cliente__rotulo" for="campo-endereco">Endereço</label>
+        <input
+          class="formulario-cliente__entrada"
+          id="campo-endereco"
+          type="text"
+          formControlName="endereco"
+          placeholder="Rua, Número, Bairro, Complemento"
+        />
+      </div>
+
+      <div class="formulario-cliente__linha">
+        <div class="formulario-cliente__campo">
+          <label class="formulario-cliente__rotulo" for="campo-cidade">Cidade</label>
+          <input
+            class="formulario-cliente__entrada"
+            id="campo-cidade"
+            type="text"
+            formControlName="cidade"
+            placeholder="Ex: São Paulo"
+          />
+        </div>
+
+        <div class="formulario-cliente__campo">
+          <label class="formulario-cliente__rotulo" for="campo-estado">Estado</label>
+          <select
+            class="formulario-cliente__entrada formulario-cliente__entrada--selecao"
+            id="campo-estado"
+            formControlName="estado"
+          >
+            <option value="">Selecione o Estado</option>
+            @for (estado of estados; track estado) {
+              <option [value]="estado">{{ estado }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </form>
+
+    <div class="formulario-cliente__acoes" modalAcoes>
+      <button
+        class="formulario-cliente__acao formulario-cliente__acao--secundario"
+        type="button"
+        (click)="fecharModal()"
+        [disabled]="salvando()"
+      >
+        Cancelar
+      </button>
+      <button
+        class="formulario-cliente__acao formulario-cliente__acao--primario"
+        type="button"
+        (click)="salvarCliente()"
+        [disabled]="salvando()"
+      >
+        Salvar Cliente
+      </button>
+    </div>
+  </app-modal>
 </section>
