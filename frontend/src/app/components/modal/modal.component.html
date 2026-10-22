@@ -38,7 +38,7 @@
       </header>
 
       <div class="modal__corpo">
-        <ng-content />
+        <ng-content select="[modalCorpo]" />
       </div>
 
       <footer class="modal__rodape" [class.modal__rodape--visivel]="possuiAcoes()">

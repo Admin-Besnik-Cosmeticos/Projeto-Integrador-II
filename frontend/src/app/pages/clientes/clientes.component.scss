@@ -55,6 +55,64 @@
   font-size: 0.85rem;
 }
 
+.clientes__feedback--erro {
+  color: #d94848;
+}
+
+.clientes__falha {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 0 1rem;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid #f0c5c5;
+  border-radius: 10px;
+  background: #fdf1f1;
+}
+
+.clientes__falha p {
+  margin: 0;
+  color: #d94848;
+  font-size: 0.85rem;
+}
+
+.clientes__falha button {
+  margin-left: auto;
+}
+
+.clientes__confirmacao {
+  margin: 0;
+  color: #5d2d63;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.clientes__confirmacao strong {
+  color: #4f2558;
+}
+
+.clientes__tentar {
+  padding: 0.5rem 1rem;
+  border: 1px solid #d94848;
+  border-radius: 8px;
+  background: #fff;
+  color: #d94848;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.clientes__tentar:hover {
+  background: #fdf1f1;
+}
+
+.clientes__tentar:focus-visible {
+  outline: 2px solid #d94848;
+  outline-offset: 2px;
+}
+
 .formulario-cliente {
   display: grid;
   gap: 1rem;
@@ -171,6 +229,17 @@
 
 .formulario-cliente__acao--primario:hover:not(:disabled) {
   background: #8b3f92;
+}
+
+.formulario-cliente__acao--perigo {
+  border-color: #d94848;
+  background: #d94848;
+  color: #fff;
+}
+
+.formulario-cliente__acao--perigo:hover:not(:disabled) {
+  border-color: #b2373f;
+  background: #b2373f;
 }
 
 @media (max-width: 520px) {
