@@ -4,7 +4,7 @@ Sistema de gerenciamento de estoque desenvolvido como Projeto Integrador II — 
 
 ## Status do projeto
 
-- Versao atual: `0.0.1`
+- Versao atual: `0.5.0`
 - Status: Em desenvolvimento
 
 ## Tecnologias

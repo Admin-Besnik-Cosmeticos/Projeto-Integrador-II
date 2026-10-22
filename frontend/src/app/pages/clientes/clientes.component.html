@@ -59,7 +59,13 @@
     [carregando]="salvando()"
     (fechar)="fecharModal()"
   >
-    <form class="formulario-cliente" [formGroup]="form" (ngSubmit)="salvarCliente()" novalidate>
+    <form
+      class="formulario-cliente"
+      modalCorpo
+      [formGroup]="form"
+      (ngSubmit)="salvarCliente()"
+      novalidate
+    >
       <div class="formulario-cliente__campo">
         <label class="formulario-cliente__rotulo" for="campo-nome">Nome Completo</label>
         <input
@@ -86,7 +92,9 @@
             type="tel"
             formControlName="telefone"
             placeholder="(11) 99999-9999"
-            maxlength="20"
+            maxlength="14"
+            inputmode="numeric"
+            (input)="formatarTelefone($event)"
             [attr.aria-invalid]="telefoneInvalid ? 'true' : null"
             [attr.aria-describedby]="telefoneInvalid ? 'erro-telefone' : null"
           />
@@ -186,7 +194,7 @@
     [carregando]="excluindo()"
     (fechar)="fecharModalExclusao()"
   >
-    <p class="clientes__confirmacao">
+    <p class="clientes__confirmacao" modalCorpo>
       Deseja realmente excluir a cliente
       <strong>{{ clienteParaExcluir()?.nome }}</strong
       >? Esta ação não pode ser desfeita.

@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ModalComponent } from '../../components/modal/modal.component';
+import { ModalAcoesDirective, ModalComponent } from '../../components/modal/modal.component';
 import {
   TabelaAcao,
   TabelaAcaoEvento,
@@ -20,7 +20,7 @@ interface ClienteLinha {
 
 @Component({
   selector: 'app-clientes',
-  imports: [TabelaComponent, ModalComponent, ReactiveFormsModule],
+  imports: [TabelaComponent, ModalComponent, ModalAcoesDirective, ReactiveFormsModule],
   templateUrl: './clientes.component.html',
   styleUrl: './clientes.component.scss',
 })
@@ -176,7 +176,7 @@ export class ClientesComponent {
     const valores = this.form.getRawValue();
     const dados = {
       nome: valores.nome.trim(),
-      telefone: valores.telefone.trim(),
+      telefone: valores.telefone.replace(/\D/g, ''),
       endereco: {
         cidade: valores.cidade.trim(),
         estado: valores.estado.trim(),
@@ -212,12 +212,23 @@ export class ClientesComponent {
     }
   }
 
+  protected formatarTelefone(evento: Event): void {
+    const entrada = evento.target;
+    if (!(entrada instanceof HTMLInputElement)) {
+      return;
+    }
+
+    const telefone = this.mascaraTelefone(entrada.value);
+    entrada.value = telefone;
+    this.form.controls.telefone.setValue(telefone, { emitEvent: false });
+  }
+
   protected registrarAcao(evento: TabelaAcaoEvento<ClienteLinha>): void {
     if (evento.acao === 'editar') {
       this.editandoId.set(evento.registro.id);
       this.form.reset({
         nome: evento.registro.nome,
-        telefone: evento.registro.telefone,
+        telefone: this.mascaraTelefone(evento.registro.telefone),
         cidade: evento.registro.cidade,
         estado: evento.registro.estado,
         enderecoEntrega: evento.registro.endereco_entrega,
@@ -276,6 +287,21 @@ export class ClientesComponent {
   ): boolean {
     const controle = this.form.controls[campo];
     return controle.invalid && (controle.touched || controle.dirty);
+  }
+
+  private mascaraTelefone(valor: string): string {
+    const digitos = valor.replace(/\D/g, '').slice(0, 11);
+    if (digitos.length <= 2) {
+      return digitos;
+    }
+
+    const ddd = digitos.slice(0, 2);
+    const numero = digitos.slice(2);
+    if (numero.length <= 5) {
+      return `(${ddd})${numero}`;
+    }
+
+    return `(${ddd})${numero.slice(0, 5)}-${numero.slice(5)}`;
   }
 
   private mensagemDeErro(error: unknown): string {

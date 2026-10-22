@@ -1,4 +1,4 @@
-import { TestBed } from '@angular/core/testing';
+import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ClientesComponent } from './clientes.component';
@@ -63,6 +63,7 @@ describe('ClientesComponent', () => {
   }
 
   async function criarComponente(): Promise<{
+    fixture: ComponentFixture<ClientesComponent>;
     vista: Vista;
     http: HttpTestingController;
     native: HTMLElement;
@@ -76,6 +77,7 @@ describe('ClientesComponent', () => {
     await drenarMicrotasks();
     fixture.detectChanges();
     return {
+      fixture,
       vista: vistas(fixture.componentInstance),
       http,
       native: fixture.nativeElement as HTMLElement,
@@ -126,6 +128,7 @@ describe('ClientesComponent', () => {
       estado: 'MG',
       enderecoEntrega: 'Rua Principal, 10',
     });
+
     const salvamento = vista.salvarCliente();
 
     const req = http.expectOne(API_URL);
@@ -148,6 +151,21 @@ describe('ClientesComponent', () => {
     expect(vista.modalAberto()).toBe(false);
     expect(vista.clientesLista().length).toBe(3);
     expect(vista.mensagem()).toContain('cadastrada');
+  });
+
+  it('formata telefone no padrao de celular brasileiro', async () => {
+    const { fixture, vista, native } = await criarComponente();
+
+    vista.abrirModal();
+    fixture.detectChanges();
+    const telefone = native.querySelector<HTMLInputElement>('#campo-telefone');
+    expect(telefone).not.toBeNull();
+
+    telefone!.value = '11999998888';
+    telefone!.dispatchEvent(new Event('input'));
+
+    expect(telefone!.value).toBe('(11)99999-8888');
+    expect(vista.form.getRawValue()['telefone']).toBe('(11)99999-8888');
   });
 
   it('bloqueia cadastro sem campos obrigatorios', async () => {

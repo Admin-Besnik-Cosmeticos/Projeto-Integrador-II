@@ -1,10 +1,10 @@
 import { Component, signal } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { ModalComponent } from './modal.component';
+import { ModalAcoesDirective, ModalComponent } from './modal.component';
 
 @Component({
   selector: 'app-teste-host',
-  imports: [ModalComponent],
+  imports: [ModalComponent, ModalAcoesDirective],
   template: `
     <app-modal
       [aberto]="aberto()"
@@ -12,7 +12,7 @@ import { ModalComponent } from './modal.component';
       [carregando]="carregando()"
       (fechar)="registrarFechamento()"
     >
-      <p class="conteudo-projetado">Conteudo projetado</p>
+      <p class="conteudo-projetado" modalCorpo>Conteudo projetado</p>
       <div modalAcoes>
         <button type="button" class="acao-cancelar">Cancelar</button>
       </div>
@@ -34,7 +34,7 @@ class TesteHost {
   imports: [ModalComponent],
   template: `
     <app-modal [aberto]="aberto()" titulo="Aviso">
-      <p class="conteudo-simples">Aviso simples</p>
+      <p class="conteudo-simples" modalCorpo>Aviso simples</p>
     </app-modal>
   `,
 })
@@ -71,7 +71,7 @@ describe('ModalComponent', () => {
     expect(pesquisar('.modal__overlay')).not.toBeNull();
     expect(pesquisar('.modal__titulo')?.textContent?.trim()).toBe('Novo Cliente');
     expect(pesquisar('.conteudo-projetado')?.textContent?.trim()).toBe('Conteudo projetado');
-    expect(pesquisar('.modal__rodape')).not.toBeNull();
+    expect(pesquisar('.modal__rodape')?.classList.contains('modal__rodape--visivel')).toBe(true);
     expect(pesquisar('.acao-cancelar')).not.toBeNull();
   });
 

@@ -1,6 +1,6 @@
 {
   "name": "projeto-integrador-2-workspace",
-  "version": "0.0.1",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -15,6 +15,7 @@
     "db:migrate": "node database/scripts/migrate.mjs",
     "db:migrate:prod": "node database/scripts/migrate.mjs --env prod",
     "db:create-user": "node database/scripts/create-user.mjs",
+    "db:create-user:prod": "node database/scripts/create-user.mjs --env prod",
     "type-check": "tsc --noEmit",
     "type-check:api": "npm --prefix api run type-check"
   },
@@ -38,4 +39,3 @@
     "yarn@1.22.22": true
   }
 }
-

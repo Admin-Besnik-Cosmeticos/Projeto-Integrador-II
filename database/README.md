@@ -67,6 +67,9 @@ Cria um registro em `usuarios` sem armazenar senha em texto puro. A senha recebi
 ```bash
 # na raiz do repo
 npm run db:create-user -- --email usuario@example.com --senha 'senha-forte' --admin false
+
+# em produção (usa o DATABASE_URL de .env.production)
+npm run db:create-user:prod -- --email usuario@example.com --senha 'senha-forte' --admin false
 ```
 
 Parâmetros:
@@ -74,6 +77,10 @@ Parâmetros:
 - `--email`: obrigatório; normalizado para minúsculas.
 - `--senha`: obrigatória; mínimo de 8 caracteres; apenas o hash é salvo.
 - `--admin`: opcional; `true` ou `false`; padrão `false`.
+
+O comando de produção deve ser executado somente em ambiente seguro, pois a
+senha é informada diretamente no terminal. O usuário é criado na tabela
+`usuarios` do banco definido em `.env.production`.
 
 ### Esquema padrão
 

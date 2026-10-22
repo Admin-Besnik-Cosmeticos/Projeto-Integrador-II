@@ -6,11 +6,10 @@ import bcrypt from 'bcryptjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..');
-config({ path: join(root, '.env.development') });
-config({ path: join(root, '.env.local'), override: false });
 
 function usage() {
   console.log("Uso: npm run db:create-user -- --email usuario@example.com --senha 'senha-forte' [--admin true|false]");
+  console.log("Para producao, use: npm run db:create-user:prod -- --email usuario@example.com --senha 'senha-forte' [--admin true|false]");
 }
 
 function parseArgs(argv) {
@@ -24,6 +23,19 @@ function parseArgs(argv) {
 }
 
 const args = parseArgs(process.argv.slice(2));
+const environment = args.get('env');
+if (environment && !['development', 'dev', 'production', 'prod'].includes(environment.toLowerCase())) {
+  console.error('Use --env development ou --env production.');
+  usage();
+  process.exit(1);
+}
+
+const envFile = ['production', 'prod'].includes(environment?.toLowerCase())
+  ? '.env.production'
+  : '.env.development';
+config({ path: join(root, envFile) });
+config({ path: join(root, '.env.local'), override: false });
+
 if (args.has('help')) {
   usage();
   process.exit(0);
