@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS pedidos (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id_cliente UUID NOT NULL REFERENCES clientes(id),
+    data_pedido TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
