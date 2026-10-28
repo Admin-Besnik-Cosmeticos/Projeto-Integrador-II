@@ -142,6 +142,10 @@ Com o limite gratuito de 12 funções, o projeto comporta até 48 operações.
 - `DELETE /api/auth/login`: encerra a sessão do usuário.
 - `POST /api/auth/recuperacao`: solicita chave de recuperação/alteração de senha.
 - `PUT /api/auth/recuperacao`: redefine a senha com chave válida.
+- `GET /api/produtos`: lista os produtos (ou busca um com `?id=`).
+- `POST /api/produtos`: cadastra produto (`nome`, `preco`, `quantidade_estoque`).
+- `PUT /api/produtos?id=`: atualiza produto.
+- `DELETE /api/produtos?id=`: remove produto (`409` se estiver vinculado a pedidos).
 
 No painel da Vercel, configure o projeto com:
 
