@@ -1,0 +1,55 @@
+<div class="dropdown" [class.dropdown--aberto]="aberto()" [class.dropdown--desabilitado]="desabilitado()">
+  <button
+    class="dropdown__controle"
+    type="button"
+    [disabled]="desabilitado()"
+    [attr.aria-expanded]="aberto()"
+    [attr.aria-label]="ariaLabel() || null"
+    (click)="alternar()"
+  >
+    <span [class.dropdown__placeholder]="!opcaoSelecionada()">
+      {{ opcaoSelecionada()?.rotulo ?? placeholder() }}
+    </span>
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18" fill="none"
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  </button>
+
+  @if (aberto()) {
+    <div class="dropdown__painel" (click)="$event.stopPropagation()">
+      <label class="dropdown__busca">
+        <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="7" />
+          <path d="m20 20-3.5-3.5" />
+        </svg>
+        <input
+          type="search"
+          [placeholder]="buscaPlaceholder()"
+          [value]="termoBusca()"
+          (input)="atualizarBusca($event)"
+          autocomplete="off"
+        />
+      </label>
+
+      <div class="dropdown__opcoes" role="listbox">
+        @for (opcao of opcoesFiltradas(); track opcao.valor) {
+          <button
+            class="dropdown__opcao"
+            [class.dropdown__opcao--selecionada]="opcao.valor === valor()"
+            [disabled]="opcao.desabilitada"
+            type="button"
+            role="option"
+            [attr.aria-selected]="opcao.valor === valor()"
+            (click)="selecionar(opcao)"
+          >
+            {{ opcao.rotulo }}
+          </button>
+        } @empty {
+          <span class="dropdown__vazio">Nenhum produto encontrado.</span>
+        }
+      </div>
+    </div>
+  }
+</div>

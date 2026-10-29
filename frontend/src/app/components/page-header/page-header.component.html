@@ -1,0 +1,13 @@
+<header class="cabecalho">
+  <div class="cabecalho__titulos">
+    <h1>{{ titulo() }}</h1>
+    @if (descricao()) {
+      <p>{{ descricao() }}</p>
+    }
+  </div>
+
+  <button class="cabecalho__acao" type="button" (click)="acaoSelecionada.emit()">
+    <span aria-hidden="true">{{ icone() }}</span>
+    {{ acao() }}
+  </button>
+</header>

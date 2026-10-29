@@ -1,0 +1,49 @@
+:host {
+  display: block;
+}
+
+.mensagem-erro {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 0 0 1rem;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid #f0c5c5;
+  border-radius: 10px;
+  background: #fdf1f1;
+}
+
+.mensagem-erro p {
+  margin: 0;
+  color: #d94848;
+  font-size: 0.85rem;
+}
+
+.mensagem-erro button {
+  margin-left: auto;
+  padding: 0.5rem 1rem;
+  border: 1px solid #d94848;
+  border-radius: 8px;
+  background: #fff;
+  color: #d94848;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mensagem-erro button:focus-visible {
+  outline: 2px solid #d94848;
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .mensagem-erro {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .mensagem-erro button {
+    margin-left: 0;
+  }
+}

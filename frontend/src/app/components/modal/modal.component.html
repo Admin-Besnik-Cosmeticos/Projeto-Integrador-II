@@ -3,6 +3,7 @@
     <div
       #janela
       class="modal__janela"
+      [class.modal__janela--grande]="tamanho() === 'grande'"
       role="dialog"
       aria-modal="true"
       [attr.aria-labelledby]="idTitulo"
