@@ -72,6 +72,7 @@ export class ProdutosComponent {
 
   protected readonly form = this.fb.nonNullable.group({
     nome: ['', [Validators.required, Validators.maxLength(255)]],
+    categoria: ['', [Validators.required, Validators.maxLength(100)]],
     preco: ['', [Validators.required, Validators.pattern(/^\d+([.,]\d{1,2})?$/)]],
     quantidadeEstoque: ['', [Validators.required, Validators.pattern(/^\d+$/)]],
   });
@@ -157,6 +158,14 @@ export class ProdutosComponent {
     );
   }
 
+  protected get categoriaErro(): string {
+    return this.mensagemCampo(
+      'categoria',
+      'Informe a categoria.',
+      'A categoria deve ter até 100 caracteres.',
+    );
+  }
+
   protected get precoErro(): string {
     return this.mensagemCampo('preco', 'Informe o preço.', 'Informe um preço válido.');
   }
@@ -231,6 +240,7 @@ export class ProdutosComponent {
     const valores = this.form.getRawValue();
     const dados = {
       nome: valores.nome.trim(),
+      categoria: valores.categoria.trim(),
       preco: this.paraNumero(valores.preco),
       quantidade_estoque: Number(valores.quantidadeEstoque),
     };
@@ -268,6 +278,7 @@ export class ProdutosComponent {
       this.editandoId.set(evento.registro.id);
       this.form.reset({
         nome: evento.registro.nome,
+        categoria: evento.registro.categoria,
         preco: this.formatarPrecoEntrada(evento.registro.preco),
         quantidadeEstoque: String(evento.registro.estoque),
       });
@@ -331,7 +342,7 @@ export class ProdutosComponent {
   }
 
   private mensagemCampo(
-    campo: 'nome' | 'preco' | 'quantidadeEstoque',
+    campo: 'nome' | 'categoria' | 'preco' | 'quantidadeEstoque',
     mensagemObrigatorio: string,
     mensagemPadrao: string,
   ): string {

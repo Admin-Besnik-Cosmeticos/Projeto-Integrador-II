@@ -12,6 +12,7 @@ export interface Produto {
 
 export interface ProdutoSalvar {
   nome: string;
+  categoria: string;
   preco: number;
   quantidade_estoque: number;
 }

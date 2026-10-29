@@ -3,6 +3,7 @@ import { sql } from '../database/db.js';
 export interface Produto {
   id: string;
   nome: string;
+  categoria: string | null;
   preco: number;
   quantidade_estoque: number;
 }
@@ -10,6 +11,7 @@ export interface Produto {
 interface ProdutoRow {
   id: string;
   nome: string;
+  categoria: string | null;
   preco: string | number;
   quantidade_estoque: number;
 }
@@ -36,6 +38,7 @@ export class ProdutoEmUsoError extends Error {
 }
 
 const LIMITE_NOME = 255;
+const LIMITE_CATEGORIA = 100;
 // NUMERIC(10, 2): ate 8 digitos inteiros e 2 decimais.
 const PRECO_MAXIMO = 99999999.99;
 const ESTOQUE_MAXIMO = 2147483647;
@@ -59,6 +62,38 @@ function normalizarNome(nomeInput: unknown): string {
     throw new ProdutoInvalidoError(`Nome deve ter no maximo ${LIMITE_NOME} caracteres.`);
   }
   return nome;
+}
+
+interface CategoriaNormalizada {
+  informada: boolean;
+  valor: string | null;
+}
+
+function normalizarCategoria(categoriaInput: unknown): CategoriaNormalizada {
+  if (categoriaInput === undefined) {
+    return { informada: false, valor: null };
+  }
+
+  if (categoriaInput === null) {
+    return { informada: true, valor: null };
+  }
+
+  if (typeof categoriaInput !== 'string') {
+    throw new ProdutoInvalidoError('Categoria deve ser um texto.');
+  }
+
+  const categoria = categoriaInput.trim();
+  if (!categoria) {
+    return { informada: true, valor: null };
+  }
+
+  if (categoria.length > LIMITE_CATEGORIA) {
+    throw new ProdutoInvalidoError(
+      `Categoria deve ter no maximo ${LIMITE_CATEGORIA} caracteres.`,
+    );
+  }
+
+  return { informada: true, valor: categoria };
 }
 
 function paraNumero(valorInput: unknown): number {
@@ -110,6 +145,7 @@ function paraProduto(row: ProdutoRow): Produto {
   return {
     id: row.id,
     nome: row.nome,
+    categoria: row.categoria,
     // O driver devolve NUMERIC como string para nao perder precisao.
     preco: Number(row.preco),
     quantidade_estoque: row.quantidade_estoque,
@@ -118,7 +154,7 @@ function paraProduto(row: ProdutoRow): Produto {
 
 export async function listProdutos(): Promise<Produto[]> {
   const rows = (await sql`
-    SELECT id, nome, preco, quantidade_estoque
+    SELECT id, nome, categoria, preco, quantidade_estoque
     FROM produtos
     ORDER BY nome
   `) as unknown as ProdutoRow[];
@@ -129,7 +165,7 @@ export async function getProdutoById(idInput: unknown): Promise<Produto> {
   const id = normalizarId(idInput);
 
   const rows = (await sql`
-    SELECT id, nome, preco, quantidade_estoque
+    SELECT id, nome, categoria, preco, quantidade_estoque
     FROM produtos
     WHERE id = ${id}
     LIMIT 1
@@ -146,13 +182,14 @@ export async function createProduto(input: unknown): Promise<Produto> {
   const body = normalizarBody(input);
 
   const nome = normalizarNome(body.nome);
+  const categoria = normalizarCategoria(body.categoria).valor;
   const preco = normalizarPreco(body.preco);
   const quantidadeEstoque = normalizarQuantidade(body.quantidade_estoque);
 
   const rows = (await sql`
-    INSERT INTO produtos (nome, preco, quantidade_estoque)
-    VALUES (${nome}, ${preco}, ${quantidadeEstoque})
-    RETURNING id, nome, preco, quantidade_estoque
+    INSERT INTO produtos (nome, categoria, preco, quantidade_estoque)
+    VALUES (${nome}, ${categoria}, ${preco}, ${quantidadeEstoque})
+    RETURNING id, nome, categoria, preco, quantidade_estoque
   `) as unknown as ProdutoRow[];
 
   const row = rows[0];
@@ -170,17 +207,30 @@ export async function updateProduto(
   const body = normalizarBody(input);
 
   const nome = normalizarNome(body.nome);
+  const categoria = normalizarCategoria(body.categoria);
   const preco = normalizarPreco(body.preco);
   const quantidadeEstoque = normalizarQuantidade(body.quantidade_estoque);
 
-  const rows = (await sql`
-    UPDATE produtos
-    SET nome = ${nome},
-        preco = ${preco},
-        quantidade_estoque = ${quantidadeEstoque}
-    WHERE id = ${id}
-    RETURNING id, nome, preco, quantidade_estoque
-  `) as unknown as ProdutoRow[];
+  const rows = (
+    categoria.informada
+      ? await sql`
+          UPDATE produtos
+          SET nome = ${nome},
+              categoria = ${categoria.valor},
+              preco = ${preco},
+              quantidade_estoque = ${quantidadeEstoque}
+          WHERE id = ${id}
+          RETURNING id, nome, categoria, preco, quantidade_estoque
+        `
+      : await sql`
+          UPDATE produtos
+          SET nome = ${nome},
+              preco = ${preco},
+              quantidade_estoque = ${quantidadeEstoque}
+          WHERE id = ${id}
+          RETURNING id, nome, categoria, preco, quantidade_estoque
+        `
+  ) as unknown as ProdutoRow[];
 
   const row = rows[0];
   if (!row) {

@@ -177,6 +177,23 @@
         }
       </div>
 
+      <div class="formulario-produto__campo">
+        <label class="formulario-produto__rotulo" for="campo-categoria">Categoria</label>
+        <input
+          class="formulario-produto__entrada"
+          id="campo-categoria"
+          type="text"
+          formControlName="categoria"
+          placeholder="Ex: Maquiagem"
+          maxlength="100"
+          [attr.aria-invalid]="categoriaErro ? 'true' : null"
+          [attr.aria-describedby]="categoriaErro ? 'erro-categoria' : null"
+        />
+        @if (categoriaErro) {
+          <p class="formulario-produto__erro" id="erro-categoria">{{ categoriaErro }}</p>
+        }
+      </div>
+
       <div class="formulario-produto__linha">
         <div class="formulario-produto__campo">
           <label class="formulario-produto__rotulo" for="campo-preco">Preço</label>

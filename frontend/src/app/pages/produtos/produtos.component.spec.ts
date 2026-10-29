@@ -114,6 +114,7 @@ type Vista = {
   mensagem(): string;
   mensagemErro(): string;
   nomeErro: string;
+  categoriaErro: string;
   precoErro: string;
   quantidadeErro: string;
   form: {
@@ -246,6 +247,7 @@ describe('ProdutosComponent', () => {
     vista.abrirModal();
     vista.form.setValue({
       nome: 'Delineador Preto',
+      categoria: 'Maquiagem',
       preco: '39,90',
       quantidadeEstoque: '15',
     });
@@ -255,6 +257,7 @@ describe('ProdutosComponent', () => {
     expect(req.request.method).toBe('POST');
     expect(req.request.body).toEqual({
       nome: 'Delineador Preto',
+      categoria: 'Maquiagem',
       preco: 39.9,
       quantidade_estoque: 15,
     });
@@ -263,6 +266,7 @@ describe('ProdutosComponent', () => {
         produto: {
           id: 'novo-produto',
           nome: 'Delineador Preto',
+          categoria: 'Maquiagem',
           preco: 39.9,
           quantidade_estoque: 15,
         },
@@ -284,6 +288,7 @@ describe('ProdutosComponent', () => {
 
     expect(vista.modalAberto()).toBe(true);
     expect(vista.nomeErro).toBeTruthy();
+    expect(vista.categoriaErro).toBeTruthy();
     expect(vista.precoErro).toBeTruthy();
     expect(vista.quantidadeErro).toBeTruthy();
   });
@@ -294,6 +299,7 @@ describe('ProdutosComponent', () => {
     vista.abrirModal();
     vista.form.setValue({
       nome: 'Delineador Preto',
+      categoria: 'Maquiagem',
       preco: 'abc',
       quantidadeEstoque: '2,5',
     });
@@ -311,11 +317,13 @@ describe('ProdutosComponent', () => {
 
     expect(vista.editandoId()).toBe('p-1');
     expect(vista.tituloModal()).toBe('Editar Produto');
+    expect(vista.form.getRawValue()['categoria']).toBe('Maquiagem');
     expect(vista.form.getRawValue()['preco']).toBe('129,90');
     expect(vista.form.getRawValue()['quantidadeEstoque']).toBe('0');
 
     vista.form.setValue({
       nome: 'Base Líquida Matte 30ml',
+      categoria: 'Maquiagem',
       preco: '139,90',
       quantidadeEstoque: '25',
     });
@@ -325,6 +333,7 @@ describe('ProdutosComponent', () => {
     expect(req.request.method).toBe('PUT');
     expect(req.request.body).toEqual({
       nome: 'Base Líquida Matte 30ml',
+      categoria: 'Maquiagem',
       preco: 139.9,
       quantidade_estoque: 25,
     });
@@ -332,9 +341,9 @@ describe('ProdutosComponent', () => {
       produto: {
         id: 'p-1',
         nome: 'Base Líquida Matte 30ml',
+        categoria: 'Maquiagem',
         preco: 139.9,
         quantidade_estoque: 25,
-        categoria: 'Maquiagem',
       },
     });
 

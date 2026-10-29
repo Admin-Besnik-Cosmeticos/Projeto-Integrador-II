@@ -6,6 +6,7 @@ import { ProdutoSalvar, ProdutosService } from './produtos.service';
 const PRODUTO = {
   id: '1a0b0f88-96e8-4a01-84a4-99b0ea2d1a00',
   nome: 'Base Líquida Matte',
+  categoria: 'Maquiagem',
   preco: 129.9,
   quantidade_estoque: 12,
 };
@@ -13,6 +14,7 @@ const PRODUTO = {
 function dados(): ProdutoSalvar {
   return {
     nome: 'Base Líquida Matte',
+    categoria: 'Maquiagem',
     preco: 129.9,
     quantidade_estoque: 12,
   };
