@@ -64,7 +64,7 @@ describe('ClientesComponent', () => {
     }
   }
 
-  async function criarComponente(): Promise<{
+  async function criarComponente(clientes: (typeof ANA)[] = [ANA, BRUNA]): Promise<{
     fixture: ComponentFixture<ClientesComponent>;
     vista: Vista;
     http: HttpTestingController;
@@ -75,7 +75,7 @@ describe('ClientesComponent', () => {
     fixture.detectChanges();
     const requisicao = http.expectOne(API_URL);
     expect(requisicao.request.method).toBe('GET');
-    requisicao.flush({ clientes: [ANA, BRUNA] });
+    requisicao.flush({ clientes });
     await drenarMicrotasks();
     fixture.detectChanges();
     return {
@@ -99,6 +99,41 @@ describe('ClientesComponent', () => {
       endereco_entrega: ANA.endereco.endereco_entrega,
     });
     expect(vista.erroListagem()).toBe('');
+  });
+
+  it('nao exibe paginacao com dez clientes ou menos', async () => {
+    const { native } = await criarComponente();
+
+    expect(native.querySelectorAll('tbody .tabela__linha').length).toBe(2);
+    expect(native.querySelector('.tabela__rodape')).toBeNull();
+  });
+
+  it('pagina a listagem quando houver mais de dez clientes', async () => {
+    const clientes = Array.from({ length: 15 }, (_, indice) => ({
+      id: `cliente-${indice + 1}`,
+      nome: `Cliente ${indice + 1}`,
+      telefone: '11999998888',
+      endereco: {
+        cidade: 'Sao Paulo',
+        estado: 'SP',
+        endereco_entrega: `Rua ${indice + 1}, 10`,
+      },
+    }));
+
+    const { fixture, native } = await criarComponente(clientes);
+
+    expect(native.querySelectorAll('tbody .tabela__linha').length).toBe(10);
+    expect(native.querySelector('.tabela__resumo')?.textContent?.trim()).toBe(
+      'Mostrando 1–10 de 15 registros',
+    );
+
+    native.querySelector<HTMLButtonElement>('.tabela__pagina[aria-label="Página 2"]')!.click();
+    fixture.detectChanges();
+
+    expect(native.querySelectorAll('tbody .tabela__linha').length).toBe(5);
+    expect(native.querySelector('.tabela__resumo')?.textContent?.trim()).toBe(
+      'Mostrando 11–15 de 15 registros',
+    );
   });
 
   it('exibe mensagem de erro com botao para tentar novamente', async () => {
