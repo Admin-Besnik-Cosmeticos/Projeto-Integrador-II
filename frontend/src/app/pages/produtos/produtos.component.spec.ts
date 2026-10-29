@@ -211,7 +211,7 @@ describe('ProdutosComponent', () => {
 
     const vista = vistas(fixture.componentInstance);
     expect(vista.erroListagem()).toContain('Erro interno na API.');
-    expect(fixture.nativeElement.querySelector('.produtos__tentar')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.mensagem-erro button')).not.toBeNull();
   });
 
   it('cadastra produto a partir do modal', async () => {

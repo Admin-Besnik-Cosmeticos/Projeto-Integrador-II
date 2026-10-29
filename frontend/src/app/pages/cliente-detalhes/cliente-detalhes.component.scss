@@ -1,0 +1,122 @@
+:host {
+  display: block;
+  color: #4f2558;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.cliente-detalhes {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.cliente-detalhes__carregando {
+  padding: 2rem;
+  border: 1px solid #eadfea;
+  border-radius: 0.75rem;
+  background: #fff;
+  color: #8d7396;
+  text-align: center;
+}
+
+.cliente-detalhes__perfil,
+.cliente-detalhes__pedidos {
+  border: 1px solid #eadfea;
+  border-radius: 0.75rem;
+  background: #fff;
+  box-shadow: 0 0.25rem 1rem #4f25580d;
+}
+
+.cliente-detalhes__perfil {
+  display: grid;
+  grid-template-columns: auto auto 1fr;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.cliente-detalhes__avatar {
+  display: grid;
+  width: 3.2rem;
+  height: 3.2rem;
+  place-items: center;
+  border-radius: 50%;
+  background: #f0d7f0;
+  color: #8b3f92;
+}
+
+.cliente-detalhes__avatar svg {
+  display: block;
+}
+
+.cliente-detalhes__identidade h2 {
+  margin: 0 0 0.3rem;
+  font-size: 1rem;
+}
+
+dl {
+  display: flex;
+  justify-content: flex-end;
+  gap: 2rem;
+  margin: 0;
+}
+
+dt {
+  color: #a24dad;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+dd {
+  max-width: 13rem;
+  margin: 0.25rem 0 0;
+  color: #8d7396;
+  font-size: 0.75rem;
+}
+
+.cliente-detalhes__pedidos {
+  padding: 1.25rem;
+}
+
+.cliente-detalhes__secao-cabecalho {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.cliente-detalhes__secao-cabecalho h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.cliente-detalhes__secao-cabecalho button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid #a24dad;
+  border-radius: 999px;
+  background: #fff;
+  color: #a24dad;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.cliente-detalhes__secao-cabecalho button:hover {
+  background: #f8e9f8;
+}
+
+@media (max-width: 760px) {
+  .cliente-detalhes__perfil {
+    grid-template-columns: auto 1fr;
+  }
+
+  dl {
+    grid-column: 1 / -1;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}

@@ -1,6 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ModalAcoesDirective, ModalComponent } from '../../components/modal/modal.component';
+import { ErrorMessageComponent } from '../../components/error-message/error-message.component';
+import { PageHeaderComponent } from '../../components/page-header/page-header.component';
 import {
   TabelaAcao,
   TabelaAcaoEvento,
@@ -21,11 +23,18 @@ interface ProdutoLinha {
   status: StatusEstoque;
 }
 
-const LIMITE_ESTOQUE_BAIXO = 20;
+const LIMITE_ESTOQUE_BAIXO = 5;
 
 @Component({
   selector: 'app-produtos',
-  imports: [TabelaComponent, ModalComponent, ModalAcoesDirective, ReactiveFormsModule],
+  imports: [
+    TabelaComponent,
+    ModalComponent,
+    ModalAcoesDirective,
+    ReactiveFormsModule,
+    ErrorMessageComponent,
+    PageHeaderComponent,
+  ],
   templateUrl: './produtos.component.html',
   styleUrl: './produtos.component.scss',
 })

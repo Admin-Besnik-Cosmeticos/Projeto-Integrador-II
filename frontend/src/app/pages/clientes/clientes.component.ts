@@ -1,6 +1,9 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ModalAcoesDirective, ModalComponent } from '../../components/modal/modal.component';
+import { ErrorMessageComponent } from '../../components/error-message/error-message.component';
+import { PageHeaderComponent } from '../../components/page-header/page-header.component';
 import {
   TabelaAcao,
   TabelaAcaoEvento,
@@ -21,12 +24,20 @@ interface ClienteLinha {
 
 @Component({
   selector: 'app-clientes',
-  imports: [TabelaComponent, ModalComponent, ModalAcoesDirective, ReactiveFormsModule],
+  imports: [
+    TabelaComponent,
+    ModalComponent,
+    ModalAcoesDirective,
+    ReactiveFormsModule,
+    ErrorMessageComponent,
+    PageHeaderComponent,
+  ],
   templateUrl: './clientes.component.html',
   styleUrl: './clientes.component.scss',
 })
 export class ClientesComponent {
   private readonly fb = inject(FormBuilder);
+  private readonly router = inject(Router);
   private readonly clientesService = inject(ClientesService);
   private readonly toast = inject(ToastService);
 
@@ -39,6 +50,7 @@ export class ClientesComponent {
   ];
 
   protected readonly acoes: TabelaAcao<ClienteLinha>[] = [
+    { id: 'visualizar', rotulo: 'Visualizar cliente', icone: 'visualizar' },
     { id: 'editar', rotulo: 'Editar cliente', icone: 'editar' },
     { id: 'excluir', rotulo: 'Excluir cliente', icone: 'excluir' },
   ];
@@ -76,6 +88,7 @@ export class ClientesComponent {
   protected readonly carregandoListagem = signal(true);
   protected readonly erroListagem = signal('');
   protected readonly clientesLista = signal<Cliente[]>([]);
+  protected readonly termoBusca = signal('');
 
   protected readonly linhas = computed<ClienteLinha[]>(() =>
     this.clientesLista().map((cliente) => ({
@@ -86,6 +99,30 @@ export class ClientesComponent {
       estado: cliente.endereco.estado,
       endereco_entrega: cliente.endereco.endereco_entrega,
     })),
+  );
+
+  protected readonly linhasFiltradas = computed<ClienteLinha[]>(() => {
+    const termo = this.termoBusca().trim().toLowerCase();
+    if (!termo) {
+      return this.linhas();
+    }
+
+    return this.linhas().filter((linha) =>
+      [linha.nome, linha.telefone, linha.cidade, linha.estado]
+        .join(' ')
+        .toLowerCase()
+        .includes(termo),
+    );
+  });
+
+  protected readonly mensagemVazio = computed(() =>
+    this.termoBusca().trim() ? 'Nenhuma cliente encontrada' : 'Nenhuma cliente cadastrada',
+  );
+
+  protected readonly descricaoVazio = computed(() =>
+    this.termoBusca().trim()
+      ? 'Ajuste a busca para encontrar outras clientes.'
+      : 'Cadastre a primeira cliente para vê-la aqui.',
   );
 
   protected readonly modalAberto = signal(false);
@@ -143,6 +180,13 @@ export class ClientesComponent {
       this.erroListagem.set(this.mensagemDeErro(error));
     } finally {
       this.carregandoListagem.set(false);
+    }
+  }
+
+  protected atualizarBusca(evento: Event): void {
+    const alvo = evento.target;
+    if (alvo instanceof HTMLInputElement) {
+      this.termoBusca.set(alvo.value);
     }
   }
 
@@ -218,6 +262,11 @@ export class ClientesComponent {
   }
 
   protected registrarAcao(evento: TabelaAcaoEvento<ClienteLinha>): void {
+    if (evento.acao === 'visualizar') {
+      void this.router.navigate(['/clientes', evento.registro.id]);
+      return;
+    }
+
     if (evento.acao === 'editar') {
       this.editandoId.set(evento.registro.id);
       this.form.reset({
