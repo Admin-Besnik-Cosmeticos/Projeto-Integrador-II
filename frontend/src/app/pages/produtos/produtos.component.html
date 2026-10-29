@@ -1,4 +1,281 @@
-<section class="page-placeholder">
-  <h1>Produtos</h1>
-  <p>Placeholder da página de produtos.</p>
+<section class="produtos">
+  <header class="produtos__cabecalho">
+    <div class="produtos__titulos">
+      <h1>Produtos</h1>
+      <p>Gerencie os produtos da loja Besnik Cosméticos.</p>
+    </div>
+
+    <button class="produtos__novo" type="button" (click)="abrirModal()">
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 24 24"
+        width="14"
+        height="14"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2.4"
+        stroke-linecap="round"
+      >
+        <path d="M12 5v14" />
+        <path d="M5 12h14" />
+      </svg>
+      Novo Produto
+    </button>
+  </header>
+
+  @if (erroListagem()) {
+    <div class="produtos__falha" role="alert">
+      <p>{{ erroListagem() }}</p>
+      <button class="produtos__tentar" type="button" (click)="carregarProdutos()">
+        Tentar novamente
+      </button>
+    </div>
+  }
+
+  <label class="produtos__busca" for="busca-produtos">
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+    <input
+      class="produtos__busca-entrada"
+      id="busca-produtos"
+      type="search"
+      placeholder="Buscar por nome..."
+      aria-label="Buscar produtos por nome"
+      autocomplete="off"
+      [value]="termoBusca()"
+      (input)="atualizarBusca($event)"
+    />
+  </label>
+
+  <app-tabela
+    [colunas]="colunas"
+    [dados]="linhasPaginadas()"
+    [acoes]="acoes"
+    [carregando]="carregandoListagem()"
+    [mensagemVazio]="mensagemVazio()"
+    [descricaoVazio]="descricaoVazio()"
+    (acaoSelecionada)="registrarAcao($event)"
+  />
+
+  @if (!carregandoListagem() && totalRegistros() > 0) {
+    <footer class="produtos__rodape">
+      <p class="produtos__resumo">
+        Mostrando {{ intervaloInicio() }}–{{ intervaloFim() }} de {{ totalRegistros() }} registros
+      </p>
+
+      <nav class="produtos__paginacao" aria-label="Paginação de produtos">
+        <button
+          class="produtos__pagina"
+          type="button"
+          aria-label="Página anterior"
+          [disabled]="paginaEfetiva() === 1"
+          (click)="irParaPagina(paginaEfetiva() - 1)"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
+
+        @for (pagina of paginas(); track pagina) {
+          <button
+            class="produtos__pagina"
+            [class.produtos__pagina--ativa]="pagina === paginaEfetiva()"
+            type="button"
+            [attr.aria-label]="'Página ' + pagina"
+            [attr.aria-current]="pagina === paginaEfetiva() ? 'page' : null"
+            (click)="irParaPagina(pagina)"
+          >
+            {{ pagina }}
+          </button>
+        }
+
+        <button
+          class="produtos__pagina"
+          type="button"
+          aria-label="Próxima página"
+          [disabled]="paginaEfetiva() === totalPaginas()"
+          (click)="irParaPagina(paginaEfetiva() + 1)"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            width="16"
+            height="16"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="m9 18 6-6-6-6" />
+          </svg>
+        </button>
+      </nav>
+    </footer>
+  }
+
+  @if (mensagem() || mensagemErro()) {
+    <p
+      class="produtos__feedback"
+      [class.produtos__feedback--erro]="mensagemErro()"
+      role="status"
+      aria-live="polite"
+    >
+      {{ mensagemErro() || mensagem() }}
+    </p>
+  }
+
+  <app-modal
+    [titulo]="tituloModal()"
+    [aberto]="modalAberto()"
+    [carregando]="salvando()"
+    (fechar)="fecharModal()"
+  >
+    <form
+      class="formulario-produto"
+      modalCorpo
+      [formGroup]="form"
+      (ngSubmit)="salvarProduto()"
+      novalidate
+    >
+      <div class="formulario-produto__campo">
+        <label class="formulario-produto__rotulo" for="campo-nome">Nome do Produto</label>
+        <input
+          class="formulario-produto__entrada"
+          id="campo-nome"
+          type="text"
+          formControlName="nome"
+          placeholder="Ex: Base Líquida Matte"
+          maxlength="255"
+          [attr.aria-invalid]="nomeErro ? 'true' : null"
+          [attr.aria-describedby]="nomeErro ? 'erro-nome' : null"
+        />
+        @if (nomeErro) {
+          <p class="formulario-produto__erro" id="erro-nome">{{ nomeErro }}</p>
+        }
+      </div>
+
+      <div class="formulario-produto__linha">
+        <div class="formulario-produto__campo">
+          <label class="formulario-produto__rotulo" for="campo-preco">Preço</label>
+          <div class="formulario-produto__grupo">
+            <span class="formulario-produto__prefixo" aria-hidden="true">R$</span>
+            <input
+              class="formulario-produto__entrada formulario-produto__entrada--prefixada"
+              id="campo-preco"
+              type="text"
+              inputmode="decimal"
+              formControlName="preco"
+              placeholder="0,00"
+              maxlength="12"
+              [attr.aria-invalid]="precoErro ? 'true' : null"
+              [attr.aria-describedby]="precoErro ? 'erro-preco' : null"
+            />
+          </div>
+          @if (precoErro) {
+            <p class="formulario-produto__erro" id="erro-preco">{{ precoErro }}</p>
+          }
+        </div>
+
+        <div class="formulario-produto__campo">
+          <label class="formulario-produto__rotulo" for="campo-quantidade">
+            Quantidade em Estoque
+          </label>
+          <input
+            class="formulario-produto__entrada"
+            id="campo-quantidade"
+            type="text"
+            inputmode="numeric"
+            formControlName="quantidadeEstoque"
+            placeholder="0"
+            maxlength="10"
+            [attr.aria-invalid]="quantidadeErro ? 'true' : null"
+            [attr.aria-describedby]="quantidadeErro ? 'erro-quantidade' : null"
+          />
+          @if (quantidadeErro) {
+            <p class="formulario-produto__erro" id="erro-quantidade">{{ quantidadeErro }}</p>
+          }
+        </div>
+      </div>
+    </form>
+
+    <div class="formulario-produto__acoes" modalAcoes>
+      <button
+        class="formulario-produto__acao formulario-produto__acao--secundario"
+        type="button"
+        (click)="fecharModal()"
+        [disabled]="salvando()"
+      >
+        Cancelar
+      </button>
+      <button
+        class="formulario-produto__acao formulario-produto__acao--primario"
+        type="button"
+        (click)="salvarProduto()"
+        [disabled]="salvando()"
+      >
+        {{
+          salvando()
+            ? 'Salvando...'
+            : editandoId() === null
+              ? 'Salvar Produto'
+              : 'Salvar Alterações'
+        }}
+      </button>
+    </div>
+  </app-modal>
+
+  <app-modal
+    titulo="Excluir Produto"
+    [aberto]="modalExclusaoAberto()"
+    [carregando]="excluindo()"
+    (fechar)="fecharModalExclusao()"
+  >
+    <p class="produtos__confirmacao" modalCorpo>
+      Deseja realmente excluir o produto
+      <strong>{{ produtoParaExcluir()?.nome }}</strong
+      >? Esta ação não pode ser desfeita.
+    </p>
+
+    <div class="formulario-produto__acoes" modalAcoes>
+      <button
+        class="formulario-produto__acao formulario-produto__acao--secundario"
+        type="button"
+        (click)="fecharModalExclusao()"
+        [disabled]="excluindo()"
+      >
+        Cancelar
+      </button>
+      <button
+        class="formulario-produto__acao formulario-produto__acao--perigo"
+        type="button"
+        (click)="confirmarExclusao()"
+        [disabled]="excluindo()"
+      >
+        {{ excluindo() ? 'Excluindo...' : 'Excluir' }}
+      </button>
+    </div>
+  </app-modal>
 </section>
