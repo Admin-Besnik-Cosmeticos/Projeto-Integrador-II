@@ -4,49 +4,32 @@
   color: #4f2558;
 }
 
-.clientes h1 {
-  margin: 0 0 0.35rem;
-  font-size: 2rem;
-  font-weight: 800;
-  color: #4f2558;
-}
-
-.clientes__cabecalho {
+.clientes__busca {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.clientes__cabecalho p {
-  margin: 0 0 1.5rem;
-  color: #8d7396;
-}
-
-.clientes__novo {
-  display: inline-flex;
-  flex-shrink: 0;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.55rem 1.1rem;
-  border: 0;
+  gap: 0.5rem;
+  max-width: 22rem;
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid #eebee2;
   border-radius: 999px;
-  background: #a24dad;
-  color: #fff;
+  background: #fcf3fb;
+  color: #a24dad;
+}
+
+.clientes__busca:focus-within {
+  border-color: #a24dad;
+  background: #fff;
+}
+
+.clientes__busca-entrada {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #4f2558;
   font: inherit;
-  font-size: 0.85rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background-color 0.15s ease;
-}
-
-.clientes__novo:hover {
-  background: #8b3f92;
-}
-
-.clientes__novo:focus-visible {
-  outline: 2px solid #a24dad;
-  outline-offset: 2px;
+  font-size: 0.9rem;
+  outline: 0;
 }
 
 .clientes__falha {

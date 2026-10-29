@@ -4,25 +4,6 @@
   font-family: Arial, Helvetica, sans-serif;
 }
 
-.produtos h1 {
-  margin: 0 0 0.35rem;
-  font-size: 2rem;
-  font-weight: 800;
-}
-
-.produtos__cabecalho {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.produtos__cabecalho p {
-  margin: 0 0 1.5rem;
-  color: #8d7396;
-}
-
-.produtos__novo,
 .produtos__tentar,
 .formulario-produto__acao {
   padding: 0.5rem 1rem;
@@ -34,21 +15,6 @@
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
-}
-
-.produtos__novo {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 0.4rem;
-  border: 0;
-  border-radius: 999px;
-  background: #a24dad;
-  color: #fff;
-}
-
-.produtos__novo:hover {
-  background: #8b3f92;
 }
 
 .produtos__busca {
@@ -82,7 +48,6 @@
   color: #baa9c0;
 }
 
-.produtos__novo:focus-visible,
 .produtos__tentar:focus-visible,
 .formulario-produto__acao:focus-visible {
   outline: 2px solid #a24dad;
@@ -227,11 +192,6 @@
 }
 
 @media (max-width: 640px) {
-  .produtos__cabecalho {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
   .produtos__busca {
     max-width: 100%;
   }

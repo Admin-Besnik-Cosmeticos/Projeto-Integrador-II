@@ -1,35 +1,13 @@
 <section class="produtos">
-  <header class="produtos__cabecalho">
-    <div class="produtos__titulos">
-      <h1>Produtos</h1>
-      <p>Gerencie os produtos da loja Besnik Cosméticos.</p>
-    </div>
-
-    <button class="produtos__novo" type="button" (click)="abrirModal()">
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 24 24"
-        width="14"
-        height="14"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.4"
-        stroke-linecap="round"
-      >
-        <path d="M12 5v14" />
-        <path d="M5 12h14" />
-      </svg>
-      Novo Produto
-    </button>
-  </header>
+  <app-page-header
+    titulo="Produtos"
+    descricao="Gerencie os produtos da loja Besnik Cosméticos."
+    acao="Novo Produto"
+    (acaoSelecionada)="abrirModal()"
+  />
 
   @if (erroListagem()) {
-    <div class="produtos__falha" role="alert">
-      <p>{{ erroListagem() }}</p>
-      <button class="produtos__tentar" type="button" (click)="carregarProdutos()">
-        Tentar novamente
-      </button>
-    </div>
+    <app-error-message [mensagem]="erroListagem()" (tentarNovamente)="carregarProdutos()" />
   }
 
   <label class="produtos__busca" for="busca-produtos">

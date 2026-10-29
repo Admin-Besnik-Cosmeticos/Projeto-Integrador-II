@@ -1,4 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import {
   DashboardError,
   DashboardPedidoRecente,
@@ -12,15 +13,18 @@ import {
   TabelaColuna,
   TabelaComponent,
 } from '../../components/tabela/tabela.component';
+import { ErrorMessageComponent } from '../../components/error-message/error-message.component';
+import { PageHeaderComponent } from '../../components/page-header/page-header.component';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [TabelaComponent],
+  imports: [TabelaComponent, ErrorMessageComponent, PageHeaderComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
 export class DashboardComponent {
   private readonly dashboardService = inject(DashboardService);
+  private readonly router = inject(Router);
 
   protected readonly carregando = signal(true);
   protected readonly erro = signal('');
@@ -81,6 +85,11 @@ export class DashboardComponent {
     } finally {
       this.carregando.set(false);
     }
+
+  }
+
+  protected novoPedido(): void {
+    void this.router.navigate(['/pedidos'], { queryParams: { novo: true } });
   }
 
   protected valor(indicador: keyof DashboardResposta): number {

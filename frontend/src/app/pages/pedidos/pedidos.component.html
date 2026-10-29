@@ -1,4 +1,155 @@
-<section class="page-placeholder">
-  <h1>Pedidos</h1>
-  <p>Placeholder da página de pedidos.</p>
+<section class="pedidos">
+  <app-page-header
+    titulo="Pedidos"
+    descricao="Gerencie os pedidos da loja Besnik Cosméticos."
+    acao="Novo Pedido"
+    (acaoSelecionada)="abrirModal()"
+  />
+
+  @if (erroListagem()) {
+  <app-error-message [mensagem]="erroListagem()" (tentarNovamente)="carregar()" />
+  }
+
+  <div class="pedidos__indicadores">
+    <article class="indicador">
+      <span class="indicador__rotulo">Total de vendas</span>
+      @if (carregandoListagem()) {
+      <span class="indicador__esqueleto"></span>
+      } @else {
+      <strong>R$ 0,00</strong>
+      }
+    </article>
+    <article class="indicador">
+      <span class="indicador__rotulo">Pedidos do mês</span>
+      @if (carregandoListagem()) {
+      <span class="indicador__esqueleto"></span>
+      } @else {
+      <strong>0</strong>
+      }
+    </article>
+    <article class="indicador">
+      <span class="indicador__rotulo">Ticket médio</span>
+      @if (carregandoListagem()) {
+      <span class="indicador__esqueleto"></span>
+      } @else {
+      <strong>R$ 0,00</strong>
+      }
+    </article>
+    <article class="indicador">
+      <span class="indicador__rotulo">Top produto</span>
+      @if (carregandoListagem()) {
+      <span class="indicador__esqueleto"></span>
+      } @else {
+      <strong>0</strong>
+      }
+    </article>
+  </div>
+
+  <app-tabela [colunas]="colunas" [dados]="linhas()" [acoes]="acoes" [carregando]="carregandoListagem()"
+    mensagemVazio="Nenhum pedido encontrado" descricaoVazio="Ajuste os filtros ou cadastre um novo pedido."
+    (acaoSelecionada)="registrarAcao($event)" />
+
+  <app-modal tamanho="grande" [titulo]="tituloModal()" [aberto]="modalAberto()" [carregando]="salvando()"
+    (fechar)="fecharModal()">
+    <form class="formulario-pedido" modalCorpo [formGroup]="form" (ngSubmit)="salvarPedido()" novalidate>
+      <div class="formulario-pedido__campo">
+        <label for="pedido-cliente">Cliente</label>
+        <app-dropdown
+          placeholder="Selecione o cliente"
+          buscaPlaceholder="Buscar cliente..."
+          ariaLabel="Selecionar cliente"
+          [opcoes]="opcoesClientes()"
+          formControlName="idCliente"
+        />
+      </div>
+
+      <div class="formulario-pedido__itens-cabecalho">
+        <h3>Itens do pedido</h3>
+        <button class="formulario-pedido__adicionar" type="button" (click)="adicionarItem()">
+          <span aria-hidden="true">+</span>
+          Adicionar item
+        </button>
+      </div>
+
+      <div formArrayName="itens" class="formulario-pedido__itens">
+        @for (item of itens.controls; track $index) {
+        <div class="formulario-pedido__item" [formGroupName]="$index">
+          <div class="formulario-pedido__campo">
+            <label [for]="'produto-' + $index">Produto</label>
+            <app-dropdown
+              [opcoes]="opcoesProdutos($index)"
+              placeholder="Selecione o produto"
+              buscaPlaceholder="Buscar produto..."
+              ariaLabel="Selecionar produto"
+              formControlName="idProduto"
+              (valorSelecionado)="selecionarProduto($index, $event)"
+            />
+          </div>
+          <div class="formulario-pedido__campo formulario-pedido__campo--quantidade">
+            <label [for]="'quantidade-' + $index">Quantidade</label>
+            <input class="formulario-pedido__quantidade"
+              [class.formulario-pedido__quantidade--invalida]="quantidadeExcedente($index)"
+              [id]="'quantidade-' + $index" type="number"
+              min="1" [max]="estoqueProduto($index) || null" step="1" inputmode="numeric"
+              formControlName="quantidade" (input)="atualizarQuantidade($index)"
+              [attr.aria-invalid]="quantidadeExcedente($index) ? 'true' : null" />
+            @if (quantidadeExcedente($index)) {
+            <small class="formulario-pedido__erro">
+              Disponível em estoque: {{ estoqueProduto($index) }}.
+            </small>
+            }
+          </div>
+          <div class="formulario-pedido__preco">
+            <span>Preço unitário</span>
+            <strong>{{ formatarMoeda(precoProduto($index)) }}</strong>
+          </div>
+          <div class="formulario-pedido__preco">
+            <span>Total</span>
+            <strong>{{ formatarMoeda(totalItem($index)) }}</strong>
+          </div>
+          <button class="formulario-pedido__remover" type="button" [disabled]="itens.length === 1"
+            (click)="removerItem($index)" aria-label="Remover item">×</button>
+        </div>
+        }
+      </div>
+      <div class="formulario-pedido__total">
+        <span>Total do pedido</span>
+        <strong>{{ formatarMoeda(totalFormulario()) }}</strong>
+      </div>
+    </form>
+    <div class="formulario-pedido__acoes" modalAcoes>
+      <button type="button" class="secundario" (click)="fecharModal()">Cancelar</button>
+      <button type="button" class="primario" (click)="salvarPedido()" [disabled]="salvando()">
+        {{ salvando() ? 'Salvando...' : 'Salvar Pedido' }}
+      </button>
+    </div>
+  </app-modal>
+
+  <app-modal titulo="Detalhes do Pedido" [aberto]="modalVisualizacaoAberto()" (fechar)="fecharVisualizacao()">
+    @if (pedidoSelecionado(); as pedido) {
+    <div class="pedido-detalhes" modalCorpo>
+      <p><strong>Pedido:</strong> {{ identificador(pedido.id) }}</p>
+      <p><strong>Cliente:</strong> {{ pedido.cliente ?? nomeCliente(pedido.id_cliente) }}</p>
+      <h3>Itens</h3>
+      @for (item of pedido.itens; track $index) {
+      <div class="pedido-detalhes__item">
+        <span>{{ item.produto ?? nomeProduto(item.id_produto) }} × {{ item.quantidade }}</span>
+        <strong>{{ formatarMoeda(item.quantidade * item.preco_unitario) }}</strong>
+      </div>
+      }
+      <p class="pedido-detalhes__total"><strong>Total: {{ formatarMoeda(pedido.total) }}</strong></p>
+    </div>
+    }
+  </app-modal>
+
+  <app-modal titulo="Excluir Pedido" [aberto]="modalExclusaoAberto()" [carregando]="excluindo()"
+    (fechar)="fecharExclusao()">
+    <p modalCorpo>Deseja realmente excluir o pedido <strong>{{ pedidoParaExcluir()?.id }}</strong>?</p>
+    <div class="formulario-pedido__acoes" modalAcoes>
+      <button type="button" class="secundario" (click)="fecharExclusao()">Cancelar</button>
+      <button type="button" class="perigo" (click)="confirmarExclusao()" [disabled]="excluindo()">
+        {{ excluindo() ? 'Excluindo...' : 'Excluir' }}
+      </button>
+    </div>
+  </app-modal>
 </section>

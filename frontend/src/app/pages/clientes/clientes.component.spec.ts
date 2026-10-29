@@ -151,7 +151,7 @@ describe('ClientesComponent', () => {
 
     const vista = vistas(fixture.componentInstance);
     expect(vista.erroListagem()).toContain('Erro interno na API.');
-    expect(fixture.nativeElement.querySelector('.clientes__tentar')).not.toBeNull();
+    expect(fixture.nativeElement.querySelector('.mensagem-erro button')).not.toBeNull();
   });
 
   it('cadastra cliente a partir do modal', async () => {

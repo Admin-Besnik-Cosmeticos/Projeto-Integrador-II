@@ -1,19 +1,13 @@
 <section class="dashboard">
-  <header class="dashboard__cabecalho">
-    <div>
-      <h1>Dashboard</h1>
-      <p>Acompanhe os principais resultados da sua loja.</p>
-    </div>
-    <button class="dashboard__atualizar" type="button" (click)="carregar()" [disabled]="carregando()">
-      Atualizar
-    </button>
-  </header>
+  <app-page-header
+    titulo="Dashboard"
+    descricao="Acompanhe os principais resultados da sua loja."
+    acao="Novo Pedido"
+    (acaoSelecionada)="novoPedido()"
+  />
 
   @if (erro()) {
-    <div class="dashboard__erro" role="alert">
-      <span>{{ erro() }}</span>
-      <button type="button" (click)="carregar()">Tentar novamente</button>
-    </div>
+    <app-error-message [mensagem]="erro()" (tentarNovamente)="carregar()" />
   }
 
   <div class="dashboard__indicadores">

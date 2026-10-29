@@ -1,15 +1,237 @@
-.page-placeholder {
-  background: transparent;
+.pedidos {
   color: #4f2558;
 }
 
-.page-placeholder h1 {
-  margin: 0 0 0.5rem;
-  font-size: 2rem;
-  font-weight: 800;
+.pedidos p,
+.pedidos h3 {
+  margin: 0;
 }
 
-.page-placeholder p {
-  margin: 0;
+.pedidos__indicadores {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.indicador {
+  min-height: 6.5rem;
+  padding: 1rem;
+  border: 1px solid #eadfea;
+  border-radius: 0.65rem;
+  background: #fff;
+  box-shadow: 0 0.25rem 1rem #4f25580d;
+}
+
+.indicador__rotulo {
+  display: block;
   color: #8d7396;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.indicador strong {
+  display: block;
+  margin-top: 0.65rem;
+  color: #5d2d63;
+  font-size: 1.35rem;
+}
+
+.indicador__esqueleto {
+  display: block;
+  width: 65%;
+  height: 1.5rem;
+  margin-top: 0.65rem;
+  border-radius: 0.25rem;
+  background: #efdef0;
+  animation: brilho 1.4s infinite;
+}
+
+.formulario-pedido {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.formulario-pedido__campo {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.formulario-pedido__campo label,
+.formulario-pedido__preco span {
+  color: #6f5875;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.formulario-pedido__campo select,
+.formulario-pedido__campo input {
+  border: 1px solid #dcc7dc;
+  border-radius: 0.45rem;
+  color: #4f2558;
+  font: inherit;
+  min-height: 2.5rem;
+  padding: 0.55rem 0.7rem;
+  background: #fcf3fb;
+}
+
+.formulario-pedido__campo select:focus-visible,
+.formulario-pedido__campo input:focus-visible {
+  border-color: #a24dad;
+  background: #fff;
+  box-shadow: 0 0 0 2px #a24dad33;
+}
+
+.formulario-pedido__quantidade {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  appearance: textfield;
+  text-align: center;
+}
+
+.formulario-pedido__quantidade--invalida {
+  border-color: #c14949;
+  background: #fff3f3;
+  color: #a52e2e;
+}
+
+.formulario-pedido__quantidade--invalida:focus-visible {
+  box-shadow: 0 0 0 2px #c1494966;
+}
+
+.formulario-pedido__erro {
+  margin: 0;
+  color: #c14949;
+  font-size: 0.7rem;
+}
+
+.formulario-pedido__itens-cabecalho {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.formulario-pedido__itens-cabecalho h3 {
+  font-size: 1rem;
+}
+
+.formulario-pedido__adicionar {
+  align-items: center;
+  border: 1px solid #a24dad;
+  border-radius: 999px;
+  background: #f3e3f3;
+  color: #7e328d;
+  cursor: pointer;
+  display: inline-flex;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  padding: 0.5rem 0.7rem;
+}
+
+.formulario-pedido__adicionar:hover {
+  background: #ead2eb;
+}
+
+.formulario-pedido__adicionar:focus-visible {
+  outline: 2px solid #a24dad;
+  outline-offset: 2px;
+}
+
+.formulario-pedido__itens {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.formulario-pedido__item {
+  align-items: end;
+  background: #faf6fa;
+  border: 1px solid #eadfea;
+  border-radius: 0.5rem;
+  display: grid;
+  gap: 0.7rem;
+  grid-template-columns: minmax(12rem, 2fr) 7rem 9rem 8rem auto;
+  padding: 0.75rem;
+}
+
+.formulario-pedido__preco {
+  display: grid;
+  min-width: 0;
+  align-self: stretch;
+  align-content: end;
+  gap: 0.3rem;
+}
+
+.formulario-pedido__preco strong {
+  color: #4f2558;
+  font-size: 0.9rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.formulario-pedido__remover {
+  background: transparent;
+  border: 0;
+  color: #c14949;
+  cursor: pointer;
+  font-size: 1.4rem;
+  padding: 0.4rem;
+}
+
+.formulario-pedido__total,
+.pedido-detalhes__total {
+  border-top: 1px solid #eadfea;
+  display: flex;
+  justify-content: space-between;
+  padding-top: 1rem;
+}
+
+.formulario-pedido__acoes {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding: 1rem 1.5rem;
+}
+
+.formulario-pedido__acoes button {
+  border: 0;
+  border-radius: 0.45rem;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 0.65rem 1rem;
+}
+
+.formulario-pedido__acoes .secundario {
+  background: #f2eaf2;
+  color: #6f5875;
+}
+
+.formulario-pedido__acoes .primario {
+  background: #a24dad;
+  color: #fff;
+}
+
+.formulario-pedido__acoes .perigo {
+  background: #c14949;
+  color: #fff;
+}
+
+@media (max-width: 760px) {
+  .pedidos__indicadores {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .formulario-pedido__item {
+    grid-template-columns: minmax(0, 1fr) 6rem;
+  }
+
+  .formulario-pedido__item .formulario-pedido__campo:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
+@keyframes brilho {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
 }

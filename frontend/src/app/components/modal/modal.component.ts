@@ -39,6 +39,7 @@ export class ModalComponent {
   readonly titulo = input.required<string>();
   readonly aberto = input.required<boolean>();
   readonly carregando = input(false);
+  readonly tamanho = input<'medio' | 'grande'>('medio');
 
   readonly fechar = output<void>();
 

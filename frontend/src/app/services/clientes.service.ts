@@ -39,6 +39,19 @@ const CLIENTES_ENDPOINT = '/api/clientes';
 export class ClientesService {
   private readonly http = inject(HttpClient);
 
+  async obter(id: string): Promise<Cliente> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<{ cliente?: Cliente }>(
+          `${CLIENTES_ENDPOINT}?id=${encodeURIComponent(id)}`,
+        ),
+      );
+      return this.obterCliente(response);
+    } catch (error) {
+      throw this.toClientesError(error);
+    }
+  }
+
   async listar(): Promise<Cliente[]> {
     try {
       const response = await firstValueFrom(

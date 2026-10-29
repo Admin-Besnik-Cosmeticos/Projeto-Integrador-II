@@ -1,113 +1,67 @@
 <section class="clientes">
-  <header class="clientes__cabecalho">
-    <div class="clientes__titulos">
-      <h1>Clientes</h1>
-      <p>Gerencie as clientes da loja Besnik Cosméticos.</p>
-    </div>
-
-    <button class="clientes__novo" type="button" (click)="abrirModal()">
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 24 24"
-        width="14"
-        height="14"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2.4"
-        stroke-linecap="round"
-      >
-        <path d="M12 5v14" />
-        <path d="M5 12h14" />
-      </svg>
-      Novo Cliente
-    </button>
-  </header>
-
-  @if (erroListagem()) {
-    <div class="clientes__falha" role="alert">
-      <p>{{ erroListagem() }}</p>
-      <button class="clientes__tentar" type="button" (click)="carregarClientes()">
-        Tentar novamente
-      </button>
-    </div>
-  }
-
-  <app-tabela
-    [colunas]="colunas"
-    [dados]="linhas()"
-    [acoes]="acoes"
-    [carregando]="carregandoListagem()"
-    mensagemVazio="Nenhuma cliente encontrada"
-    descricaoVazio="Cadastre a primeira cliente para vê-la aqui."
-    (acaoSelecionada)="registrarAcao($event)"
+  <app-page-header
+    titulo="Clientes"
+    descricao="Gerencie as clientes da loja Besnik Cosméticos."
+    acao="Novo Cliente"
+    (acaoSelecionada)="abrirModal()"
   />
 
-  <app-modal
-    [titulo]="tituloModal()"
-    [aberto]="modalAberto()"
-    [carregando]="salvando()"
-    (fechar)="fecharModal()"
-  >
-    <form
-      class="formulario-cliente"
-      modalCorpo
-      [formGroup]="form"
-      (ngSubmit)="salvarCliente()"
-      novalidate
-    >
+  @if (erroListagem()) {
+  <app-error-message [mensagem]="erroListagem()" (tentarNovamente)="carregarClientes()" />
+  }
+
+  <label class="clientes__busca" for="busca-clientes">
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor"
+      stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+    <input class="clientes__busca-entrada" id="busca-clientes" type="search"
+      placeholder="Buscar por nome, telefone ou cidade..." aria-label="Buscar clientes"
+      autocomplete="off" [value]="termoBusca()" (input)="atualizarBusca($event)" />
+  </label>
+
+  <app-tabela [colunas]="colunas" [dados]="linhasFiltradas()" [acoes]="acoes"
+    [carregando]="carregandoListagem()" [mensagemVazio]="mensagemVazio()"
+    [descricaoVazio]="descricaoVazio()"
+    (acaoSelecionada)="registrarAcao($event)" />
+
+  <app-modal [titulo]="tituloModal()" [aberto]="modalAberto()" [carregando]="salvando()" (fechar)="fecharModal()">
+    <form class="formulario-cliente" modalCorpo [formGroup]="form" (ngSubmit)="salvarCliente()" novalidate>
       <div class="formulario-cliente__campo">
         <label class="formulario-cliente__rotulo" for="campo-nome">Nome Completo</label>
-        <input
-          class="formulario-cliente__entrada"
-          id="campo-nome"
-          type="text"
-          formControlName="nome"
-          placeholder="Ex: Ana Paula Silva"
-          maxlength="255"
-          [attr.aria-invalid]="nomeInvalid ? 'true' : null"
-          [attr.aria-describedby]="nomeInvalid ? 'erro-nome' : null"
-        />
+        <input class="formulario-cliente__entrada" id="campo-nome" type="text" formControlName="nome"
+          placeholder="Ex: Ana Paula Silva" maxlength="255" [attr.aria-invalid]="nomeInvalid ? 'true' : null"
+          [attr.aria-describedby]="nomeInvalid ? 'erro-nome' : null" />
         @if (nomeInvalid) {
-          <p class="formulario-cliente__erro" id="erro-nome">Informe o nome da cliente.</p>
+        <p class="formulario-cliente__erro" id="erro-nome">Informe o nome da cliente.</p>
         }
       </div>
 
       <div class="formulario-cliente__linha">
         <div class="formulario-cliente__campo">
           <label class="formulario-cliente__rotulo" for="campo-telefone">Telefone</label>
-          <input
-            class="formulario-cliente__entrada"
-            id="campo-telefone"
-            type="tel"
-            formControlName="telefone"
-            placeholder="(11) 99999-9999"
-            maxlength="14"
-            inputmode="numeric"
-            (input)="formatarTelefone($event)"
+          <input class="formulario-cliente__entrada" id="campo-telefone" type="tel" formControlName="telefone"
+            placeholder="(11) 99999-9999" maxlength="14" inputmode="numeric" (input)="formatarTelefone($event)"
             [attr.aria-invalid]="telefoneInvalid ? 'true' : null"
-            [attr.aria-describedby]="telefoneInvalid ? 'erro-telefone' : null"
-          />
+            [attr.aria-describedby]="telefoneInvalid ? 'erro-telefone' : null" />
           @if (telefoneInvalid) {
-            <p class="formulario-cliente__erro" id="erro-telefone">Informe o telefone.</p>
+          <p class="formulario-cliente__erro" id="erro-telefone">Informe o telefone.</p>
           }
         </div>
 
         <div class="formulario-cliente__campo">
           <label class="formulario-cliente__rotulo" for="campo-estado">Estado</label>
-          <select
-            class="formulario-cliente__entrada formulario-cliente__entrada--selecao"
-            id="campo-estado"
-            formControlName="estado"
-            [attr.aria-invalid]="estadoInvalid ? 'true' : null"
-            [attr.aria-describedby]="estadoInvalid ? 'erro-estado' : null"
-          >
+          <select class="formulario-cliente__entrada formulario-cliente__entrada--selecao" id="campo-estado"
+            formControlName="estado" [attr.aria-invalid]="estadoInvalid ? 'true' : null"
+            [attr.aria-describedby]="estadoInvalid ? 'erro-estado' : null">
             <option value="">Selecione o Estado</option>
             @for (estado of estados; track estado) {
-              <option [value]="estado">{{ estado }}</option>
+            <option [value]="estado">{{ estado }}</option>
             }
           </select>
           @if (estadoInvalid) {
-            <p class="formulario-cliente__erro" id="erro-estado">Selecione o estado.</p>
+          <p class="formulario-cliente__erro" id="erro-estado">Selecione o estado.</p>
           }
         </div>
       </div>
@@ -116,17 +70,11 @@
 
       <div class="formulario-cliente__campo">
         <label class="formulario-cliente__rotulo" for="campo-cidade">Cidade</label>
-        <input
-          class="formulario-cliente__entrada"
-          id="campo-cidade"
-          type="text"
-          formControlName="cidade"
-          placeholder="Ex: São Paulo"
-          [attr.aria-invalid]="cidadeInvalid ? 'true' : null"
-          [attr.aria-describedby]="cidadeInvalid ? 'erro-cidade' : null"
-        />
+        <input class="formulario-cliente__entrada" id="campo-cidade" type="text" formControlName="cidade"
+          placeholder="Ex: São Paulo" [attr.aria-invalid]="cidadeInvalid ? 'true' : null"
+          [attr.aria-describedby]="cidadeInvalid ? 'erro-cidade' : null" />
         @if (cidadeInvalid) {
-          <p class="formulario-cliente__erro" id="erro-cidade">Informe a cidade.</p>
+        <p class="formulario-cliente__erro" id="erro-cidade">Informe a cidade.</p>
         }
       </div>
 
@@ -134,76 +82,50 @@
         <label class="formulario-cliente__rotulo" for="campo-endereco-entrega">
           Endereço de Entrega
         </label>
-        <input
-          class="formulario-cliente__entrada"
-          id="campo-endereco-entrega"
-          type="text"
-          formControlName="enderecoEntrega"
-          placeholder="Rua, Número, Bairro, Complemento"
+        <input class="formulario-cliente__entrada" id="campo-endereco-entrega" type="text"
+          formControlName="enderecoEntrega" placeholder="Rua, Número, Bairro, Complemento"
           [attr.aria-invalid]="enderecoEntregaInvalid ? 'true' : null"
-          [attr.aria-describedby]="enderecoEntregaInvalid ? 'erro-endereco-entrega' : null"
-        />
+          [attr.aria-describedby]="enderecoEntregaInvalid ? 'erro-endereco-entrega' : null" />
         @if (enderecoEntregaInvalid) {
-          <p class="formulario-cliente__erro" id="erro-endereco-entrega">
-            Informe o endereço de entrega.
-          </p>
+        <p class="formulario-cliente__erro" id="erro-endereco-entrega">
+          Informe o endereço de entrega.
+        </p>
         }
       </div>
     </form>
 
     <div class="formulario-cliente__acoes" modalAcoes>
-      <button
-        class="formulario-cliente__acao formulario-cliente__acao--secundario"
-        type="button"
-        (click)="fecharModal()"
-        [disabled]="salvando()"
-      >
+      <button class="formulario-cliente__acao formulario-cliente__acao--secundario" type="button"
+        (click)="fecharModal()" [disabled]="salvando()">
         Cancelar
       </button>
-      <button
-        class="formulario-cliente__acao formulario-cliente__acao--primario"
-        type="button"
-        (click)="salvarCliente()"
-        [disabled]="salvando()"
-      >
+      <button class="formulario-cliente__acao formulario-cliente__acao--primario" type="button"
+        (click)="salvarCliente()" [disabled]="salvando()">
         {{
-          salvando()
-            ? 'Salvando...'
-            : editandoId() === null
-              ? 'Salvar Cliente'
-              : 'Salvar Alterações'
+        salvando()
+        ? 'Salvando...'
+        : editandoId() === null
+        ? 'Salvar Cliente'
+        : 'Salvar Alterações'
         }}
       </button>
     </div>
   </app-modal>
 
-  <app-modal
-    titulo="Excluir Cliente"
-    [aberto]="modalExclusaoAberto()"
-    [carregando]="excluindo()"
-    (fechar)="fecharModalExclusao()"
-  >
+  <app-modal titulo="Excluir Cliente" [aberto]="modalExclusaoAberto()" [carregando]="excluindo()"
+    (fechar)="fecharModalExclusao()">
     <p class="clientes__confirmacao" modalCorpo>
       Deseja realmente excluir a cliente
-      <strong>{{ clienteParaExcluir()?.nome }}</strong
-      >? Esta ação não pode ser desfeita.
+      <strong>{{ clienteParaExcluir()?.nome }}</strong>? Esta ação não pode ser desfeita.
     </p>
 
     <div class="formulario-cliente__acoes" modalAcoes>
-      <button
-        class="formulario-cliente__acao formulario-cliente__acao--secundario"
-        type="button"
-        (click)="fecharModalExclusao()"
-        [disabled]="excluindo()"
-      >
+      <button class="formulario-cliente__acao formulario-cliente__acao--secundario" type="button"
+        (click)="fecharModalExclusao()" [disabled]="excluindo()">
         Cancelar
       </button>
-      <button
-        class="formulario-cliente__acao formulario-cliente__acao--perigo"
-        type="button"
-        (click)="confirmarExclusao()"
-        [disabled]="excluindo()"
-      >
+      <button class="formulario-cliente__acao formulario-cliente__acao--perigo" type="button"
+        (click)="confirmarExclusao()" [disabled]="excluindo()">
         {{ excluindo() ? 'Excluindo...' : 'Excluir' }}
       </button>
     </div>

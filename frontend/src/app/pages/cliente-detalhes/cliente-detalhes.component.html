@@ -1,0 +1,66 @@
+<section class="cliente-detalhes">
+  <app-page-header
+    titulo="Detalhes do Cliente"
+    acao="Voltar para Clientes"
+    icone="←"
+    (acaoSelecionada)="voltar()"
+  />
+
+  @if (erro()) {
+    <app-error-message [mensagem]="erro()" (tentarNovamente)="carregar()" />
+  } @else if (carregando()) {
+    <div class="cliente-detalhes__carregando" aria-live="polite">Carregando dados do cliente...</div>
+  } @else if (cliente(); as clienteAtual) {
+    <article class="cliente-detalhes__perfil">
+      <div class="cliente-detalhes__avatar" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor"
+          stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="3.5" />
+          <path d="M4.5 20c.8-3.5 3.2-5.3 7.5-5.3s6.7 1.8 7.5 5.3" />
+        </svg>
+      </div>
+      <div class="cliente-detalhes__identidade">
+        <h2>{{ clienteAtual.nome }}</h2>
+      </div>
+      <dl>
+        <div>
+          <dt>Celular</dt>
+          <dd>{{ formatarTelefone(clienteAtual.telefone) }}</dd>
+        </div>
+        <div>
+          <dt>Endereço de Entrega</dt>
+          <dd>{{ clienteAtual.endereco.endereco_entrega }}</dd>
+        </div>
+        <div>
+          <dt>Cidade</dt>
+          <dd>{{ clienteAtual.endereco.cidade }}</dd>
+        </div>
+        <div>
+          <dt>Estado</dt>
+          <dd>{{ clienteAtual.endereco.estado }}</dd>
+        </div>
+      </dl>
+    </article>
+
+    <section class="cliente-detalhes__pedidos">
+      <div class="cliente-detalhes__secao-cabecalho">
+        <h2>Pedidos do Cliente</h2>
+        <button type="button" (click)="novoPedido()">
+          <span aria-hidden="true">+</span>
+          Novo Pedido
+        </button>
+      </div>
+      @if (erroPedidos()) {
+        <app-error-message [mensagem]="erroPedidos()" (tentarNovamente)="carregar()" />
+      }
+      <app-tabela
+        [colunas]="colunas"
+        [dados]="linhas()"
+        [acoes]="acoes"
+        mensagemVazio="Nenhum pedido encontrado"
+        descricaoVazio="Os pedidos deste cliente aparecerão aqui."
+        (acaoSelecionada)="registrarAcao($event)"
+      />
+    </section>
+  }
+</section>

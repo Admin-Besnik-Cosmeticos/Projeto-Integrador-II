@@ -10,6 +10,9 @@
 }
 
 .layout__sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 10;
   width: 260px;
   min-width: 260px;
 }
@@ -17,6 +20,7 @@
 .layout__content {
   flex: 1;
   min-width: 0;
+  margin-left: 260px;
   padding: 2rem;
   box-sizing: border-box;
 }
@@ -27,11 +31,13 @@
   }
 
   .layout__sidebar {
+    position: static;
     width: 100%;
     min-width: 0;
   }
 
   .layout__content {
+    margin-left: 0;
     padding: 1rem;
   }
 }
