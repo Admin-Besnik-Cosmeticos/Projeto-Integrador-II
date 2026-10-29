@@ -1,4 +1,108 @@
-<section class="page-placeholder">
-  <h1>Dashboard</h1>
-  <p>Placeholder da área autenticada da aplicação.</p>
+<section class="dashboard">
+  <header class="dashboard__cabecalho">
+    <div>
+      <h1>Dashboard</h1>
+      <p>Acompanhe os principais resultados da sua loja.</p>
+    </div>
+    <button class="dashboard__atualizar" type="button" (click)="carregar()" [disabled]="carregando()">
+      Atualizar
+    </button>
+  </header>
+
+  @if (erro()) {
+    <div class="dashboard__erro" role="alert">
+      <span>{{ erro() }}</span>
+      <button type="button" (click)="carregar()">Tentar novamente</button>
+    </div>
+  }
+
+  <div class="dashboard__indicadores">
+    <article class="indicador">
+      <span class="indicador__rotulo">Vendas totais</span>
+      @if (carregando()) {
+        <span class="indicador__esqueleto"></span>
+      } @else {
+        <strong>{{ formatarMoeda(valor('vendas_totais')) }}</strong>
+      }
+    </article>
+    <article class="indicador">
+      <span class="indicador__rotulo">Pedidos do mês</span>
+      @if (carregando()) {
+        <span class="indicador__esqueleto"></span>
+      } @else {
+        <strong>{{ valor('pedidos_mes') }}</strong>
+      }
+    </article>
+    <article class="indicador">
+      <span class="indicador__rotulo">Clientes ativos</span>
+      @if (carregando()) {
+        <span class="indicador__esqueleto"></span>
+      } @else {
+        <strong>{{ valor('clientes_ativos') }}</strong>
+        <small [class]="'variacao variacao--' + classeVariacao()">
+          {{ textoVariacao() }} nos últimos 30 dias
+        </small>
+      }
+    </article>
+    <article class="indicador">
+      <span class="indicador__rotulo">Ticket médio</span>
+      @if (carregando()) {
+        <span class="indicador__esqueleto"></span>
+      } @else {
+        <strong>{{ formatarMoeda(valor('ticket_medio')) }}</strong>
+      }
+    </article>
+  </div>
+
+  <div class="dashboard__tabelas">
+    <section class="dashboard__secao">
+      <div class="dashboard__secao-cabecalho">
+        <div>
+          <h2>Produtos Mais Vendidos</h2>
+          <span>Desempenho dos produtos</span>
+        </div>
+        <label class="dashboard__filtro">
+          <span class="visualmente-oculto">Filtrar produtos por categoria</span>
+          <select aria-label="Filtrar produtos por categoria">
+            <option>Categoria</option>
+          </select>
+        </label>
+      </div>
+      <app-tabela
+        [colunas]="produtosColunas"
+        [dados]="produtos()"
+        [acoes]="produtosAcoes"
+        [carregando]="carregando()"
+        [linhasCarregando]="5"
+        mensagemVazio="Nenhum produto vendido"
+        descricaoVazio="Os produtos vendidos aparecerão aqui."
+        (acaoSelecionada)="registrarAcao($event)"
+      />
+    </section>
+
+    <section class="dashboard__secao">
+      <div class="dashboard__secao-cabecalho">
+        <div>
+          <h2>Pedidos Recentes</h2>
+          <span>Últimos pedidos realizados</span>
+        </div>
+        <label class="dashboard__filtro">
+          <span class="visualmente-oculto">Filtrar pedidos por status</span>
+          <select aria-label="Filtrar pedidos por status">
+            <option>Status</option>
+          </select>
+        </label>
+      </div>
+      <app-tabela
+        [colunas]="pedidosColunas"
+        [dados]="pedidos()"
+        [acoes]="pedidosAcoes"
+        [carregando]="carregando()"
+        [linhasCarregando]="5"
+        mensagemVazio="Nenhum pedido recente"
+        descricaoVazio="Os pedidos recentes aparecerão aqui."
+        (acaoSelecionada)="registrarAcao($event)"
+      />
+    </section>
+  </div>
 </section>
