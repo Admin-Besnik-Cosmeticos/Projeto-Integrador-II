@@ -1,5 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
+import { provideRouter } from '@angular/router';
 import { DashboardService } from '../../services/dashboard.service';
 import { DashboardComponent } from './dashboard.component';
 
@@ -7,7 +8,7 @@ describe('DashboardComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [DashboardComponent],
-      providers: [provideHttpClient(), DashboardService],
+      providers: [provideHttpClient(), provideRouter([]), DashboardService],
     }).compileComponents();
   });
 
