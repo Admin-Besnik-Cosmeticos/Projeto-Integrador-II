@@ -21,9 +21,7 @@ interface ProdutoLinha {
   status: StatusEstoque;
 }
 
-const ITENS_POR_PAGINA = 8;
 const LIMITE_ESTOQUE_BAIXO = 20;
-const MAXIMO_PAGINAS_VISIVEIS = 5;
 
 @Component({
   selector: 'app-produtos',
@@ -60,7 +58,6 @@ export class ProdutosComponent {
   protected readonly produtosLista = signal<Produto[]>([]);
 
   protected readonly termoBusca = signal('');
-  protected readonly paginaAtual = signal(1);
 
   protected readonly modalAberto = signal(false);
   protected readonly salvando = signal(false);
@@ -94,42 +91,6 @@ export class ProdutosComponent {
       return this.linhas();
     }
     return this.linhas().filter((linha) => linha.nome.toLowerCase().includes(termo));
-  });
-
-  protected readonly totalRegistros = computed(() => this.linhasFiltradas().length);
-
-  protected readonly totalPaginas = computed(() =>
-    Math.max(1, Math.ceil(this.totalRegistros() / ITENS_POR_PAGINA)),
-  );
-
-  protected readonly paginaEfetiva = computed(() =>
-    Math.min(this.paginaAtual(), this.totalPaginas()),
-  );
-
-  protected readonly linhasPaginadas = computed<ProdutoLinha[]>(() => {
-    const inicio = (this.paginaEfetiva() - 1) * ITENS_POR_PAGINA;
-    return this.linhasFiltradas().slice(inicio, inicio + ITENS_POR_PAGINA);
-  });
-
-  protected readonly intervaloInicio = computed(() =>
-    this.totalRegistros() === 0 ? 0 : (this.paginaEfetiva() - 1) * ITENS_POR_PAGINA + 1,
-  );
-
-  protected readonly intervaloFim = computed(() =>
-    Math.min(this.paginaEfetiva() * ITENS_POR_PAGINA, this.totalRegistros()),
-  );
-
-  protected readonly paginas = computed<number[]>(() => {
-    const total = this.totalPaginas();
-    if (total <= MAXIMO_PAGINAS_VISIVEIS) {
-      return Array.from({ length: total }, (_, indice) => indice + 1);
-    }
-
-    let inicio = Math.max(1, this.paginaEfetiva() - 2);
-    const fim = Math.min(total, inicio + MAXIMO_PAGINAS_VISIVEIS - 1);
-    inicio = Math.max(1, fim - MAXIMO_PAGINAS_VISIVEIS + 1);
-
-    return Array.from({ length: fim - inicio + 1 }, (_, indice) => inicio + indice);
   });
 
   protected readonly mensagemVazio = computed(() =>
@@ -199,15 +160,6 @@ export class ProdutosComponent {
     }
 
     this.termoBusca.set(alvo.value);
-    this.paginaAtual.set(1);
-  }
-
-  protected irParaPagina(pagina: number): void {
-    const destino = Math.min(Math.max(1, pagina), this.totalPaginas());
-    if (destino === this.paginaEfetiva()) {
-      return;
-    }
-    this.paginaAtual.set(destino);
   }
 
   protected abrirModal(): void {

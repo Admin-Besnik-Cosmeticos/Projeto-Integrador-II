@@ -61,80 +61,13 @@
 
   <app-tabela
     [colunas]="colunas"
-    [dados]="linhasPaginadas()"
+    [dados]="linhasFiltradas()"
     [acoes]="acoes"
     [carregando]="carregandoListagem()"
     [mensagemVazio]="mensagemVazio()"
     [descricaoVazio]="descricaoVazio()"
     (acaoSelecionada)="registrarAcao($event)"
   />
-
-  @if (!carregandoListagem() && totalRegistros() > 0) {
-    <footer class="produtos__rodape">
-      <p class="produtos__resumo">
-        Mostrando {{ intervaloInicio() }}–{{ intervaloFim() }} de {{ totalRegistros() }} registros
-      </p>
-
-      <nav class="produtos__paginacao" aria-label="Paginação de produtos">
-        <button
-          class="produtos__pagina"
-          type="button"
-          aria-label="Página anterior"
-          [disabled]="paginaEfetiva() === 1"
-          (click)="irParaPagina(paginaEfetiva() - 1)"
-        >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-        </button>
-
-        @for (pagina of paginas(); track pagina) {
-          <button
-            class="produtos__pagina"
-            [class.produtos__pagina--ativa]="pagina === paginaEfetiva()"
-            type="button"
-            [attr.aria-label]="'Página ' + pagina"
-            [attr.aria-current]="pagina === paginaEfetiva() ? 'page' : null"
-            (click)="irParaPagina(pagina)"
-          >
-            {{ pagina }}
-          </button>
-        }
-
-        <button
-          class="produtos__pagina"
-          type="button"
-          aria-label="Próxima página"
-          [disabled]="paginaEfetiva() === totalPaginas()"
-          (click)="irParaPagina(paginaEfetiva() + 1)"
-        >
-          <svg
-            aria-hidden="true"
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="m9 18 6-6-6-6" />
-          </svg>
-        </button>
-      </nav>
-    </footer>
-  }
 
   <app-modal
     [titulo]="tituloModal()"

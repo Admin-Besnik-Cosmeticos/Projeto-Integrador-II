@@ -1,4 +1,4 @@
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, effect, input, output, signal } from '@angular/core';
 
 export type TabelaTipoColuna = 'texto' | 'destaque' | 'data' | 'moeda' | 'tag';
 export type TabelaAlinhamento = 'esquerda' | 'centro' | 'direita';
@@ -39,6 +39,8 @@ const MESES_ABREVIADOS = [
   'Dez',
 ] as const;
 
+const MAXIMO_PAGINAS_VISIVEIS = 5;
+
 @Component({
   selector: 'app-tabela',
   templateUrl: './tabela.component.html',
@@ -53,8 +55,11 @@ export class TabelaComponent<T> {
   readonly mensagemVazio = input('Nenhum registro encontrado');
   readonly descricaoVazio = input('');
   readonly moeda = input('BRL');
+  readonly tamanhoPagina = input(10);
 
   readonly acaoSelecionada = output<TabelaAcaoEvento<T>>();
+
+  private readonly paginaAtual = signal(1);
 
   protected readonly linhasEsqueleto = computed(() =>
     Array.from({ length: this.linhasCarregando() }, (_, indice) => indice),
@@ -63,6 +68,63 @@ export class TabelaComponent<T> {
   protected readonly totalColunas = computed(
     () => this.colunas().length + (this.acoes().length > 0 ? 1 : 0),
   );
+
+  protected readonly totalRegistros = computed(() => this.dados().length);
+
+  protected readonly totalPaginas = computed(() =>
+    Math.max(1, Math.ceil(this.totalRegistros() / Math.max(1, this.tamanhoPagina()))),
+  );
+
+  protected readonly paginaEfetiva = computed(() =>
+    Math.min(this.paginaAtual(), this.totalPaginas()),
+  );
+
+  protected readonly dadosPaginados = computed<T[]>(() => {
+    const inicio = (this.paginaEfetiva() - 1) * this.tamanhoPagina();
+    return this.dados().slice(inicio, inicio + this.tamanhoPagina());
+  });
+
+  protected readonly paginacaoVisivel = computed(
+    () => !this.carregando() && this.totalRegistros() > this.tamanhoPagina(),
+  );
+
+  protected readonly intervaloInicio = computed(() =>
+    this.totalRegistros() === 0 ? 0 : (this.paginaEfetiva() - 1) * this.tamanhoPagina() + 1,
+  );
+
+  protected readonly intervaloFim = computed(() =>
+    Math.min(this.paginaEfetiva() * this.tamanhoPagina(), this.totalRegistros()),
+  );
+
+  protected readonly paginas = computed<number[]>(() => {
+    const total = this.totalPaginas();
+    if (total <= MAXIMO_PAGINAS_VISIVEIS) {
+      return Array.from({ length: total }, (_, indice) => indice + 1);
+    }
+
+    let inicio = Math.max(1, this.paginaEfetiva() - 2);
+    const fim = Math.min(total, inicio + MAXIMO_PAGINAS_VISIVEIS - 1);
+    inicio = Math.max(1, fim - MAXIMO_PAGINAS_VISIVEIS + 1);
+
+    return Array.from({ length: fim - inicio + 1 }, (_, indice) => inicio + indice);
+  });
+
+  constructor() {
+    // Uma nova lista (busca, recarga ou filtro) sempre volta para a primeira página.
+    effect(() => {
+      this.dados();
+      this.tamanhoPagina();
+      this.paginaAtual.set(1);
+    });
+  }
+
+  protected irParaPagina(pagina: number): void {
+    const destino = Math.min(Math.max(1, pagina), this.totalPaginas());
+    if (destino === this.paginaEfetiva()) {
+      return;
+    }
+    this.paginaAtual.set(destino);
+  }
 
   protected texto(registro: T, coluna: TabelaColuna<T>): string {
     const valor: unknown = registro[coluna.campo];

@@ -24,7 +24,6 @@
 
 .produtos__novo,
 .produtos__tentar,
-.produtos__pagina,
 .formulario-produto__acao {
   padding: 0.5rem 1rem;
   border: 1px solid #dcc7dc;
@@ -83,49 +82,8 @@
   color: #baa9c0;
 }
 
-.produtos__rodape {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  margin: 1rem 0 0;
-}
-
-.produtos__resumo {
-  margin: 0;
-  color: #8d7396;
-  font-size: 0.82rem;
-}
-
-.produtos__paginacao {
-  display: inline-flex;
-  gap: 0.35rem;
-}
-
-.produtos__pagina {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2rem;
-  padding: 0 0.4rem;
-  font-size: 0.8rem;
-}
-
-.produtos__pagina:hover:not(:disabled) {
-  background: #f4def5;
-}
-
-.produtos__pagina--ativa,
-.produtos__pagina--ativa:hover {
-  border-color: #a24dad;
-  background: #a24dad;
-  color: #fff;
-}
-
 .produtos__novo:focus-visible,
 .produtos__tentar:focus-visible,
-.produtos__pagina:focus-visible,
 .formulario-produto__acao:focus-visible {
   outline: 2px solid #a24dad;
   outline-offset: 2px;
@@ -238,8 +196,7 @@
   gap: 0.75rem;
 }
 
-.formulario-produto__acao:disabled,
-.produtos__pagina:disabled {
+.formulario-produto__acao:disabled {
   opacity: 0.5;
   cursor: default;
 }
@@ -270,8 +227,7 @@
 }
 
 @media (max-width: 640px) {
-  .produtos__cabecalho,
-  .produtos__rodape {
+  .produtos__cabecalho {
     flex-direction: column;
     align-items: flex-start;
   }

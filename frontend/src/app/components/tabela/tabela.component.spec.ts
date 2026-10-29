@@ -182,4 +182,129 @@ describe('TabelaComponent', () => {
 
     expect(spy).toHaveBeenCalledExactlyOnceWith({ acao: 'excluir', registro: REGISTROS[1] });
   });
+
+  it('não exibe paginação quando os dados cabem em uma página', () => {
+    fixture.componentRef.setInput('colunas', COLUNAS);
+    fixture.componentRef.setInput('dados', gerarRegistros(10));
+    fixture.detectChanges();
+
+    const grade = fixture.nativeElement as HTMLElement;
+    expect(grade.querySelectorAll('tbody .tabela__linha').length).toBe(10);
+    expect(grade.querySelector('.tabela__rodape')).toBeNull();
+  });
+
+  it('pagina em 10 itens e navega entre as páginas', () => {
+    fixture.componentRef.setInput('colunas', COLUNAS);
+    fixture.componentRef.setInput('dados', gerarRegistros(25));
+    fixture.detectChanges();
+
+    const grade = fixture.nativeElement as HTMLElement;
+    expect(grade.querySelectorAll('tbody .tabela__linha').length).toBe(10);
+    expect(grade.querySelector('.tabela__resumo')?.textContent?.trim()).toBe(
+      'Mostrando 1–10 de 25 registros',
+    );
+    expect(botaoPagina('1').getAttribute('aria-current')).toBe('page');
+    expect(botaoPagina('3')).not.toBeNull();
+
+    botaoPagina('3').click();
+    fixture.detectChanges();
+
+    expect(grade.querySelectorAll('tbody .tabela__linha').length).toBe(5);
+    expect(grade.querySelector('.tabela__resumo')?.textContent?.trim()).toBe(
+      'Mostrando 21–25 de 25 registros',
+    );
+    expect(botaoPagina('3').getAttribute('aria-current')).toBe('page');
+    expect(botaoNavegacao('Próxima página').disabled).toBe(true);
+
+    botaoNavegacao('Página anterior').click();
+    fixture.detectChanges();
+
+    expect(grade.querySelector('.tabela__resumo')?.textContent?.trim()).toBe(
+      'Mostrando 11–20 de 25 registros',
+    );
+  });
+
+  it('respeita o tamanho de página configurado', () => {
+    fixture.componentRef.setInput('colunas', COLUNAS);
+    fixture.componentRef.setInput('dados', gerarRegistros(12));
+    fixture.componentRef.setInput('tamanhoPagina', 5);
+    fixture.detectChanges();
+
+    const grade = fixture.nativeElement as HTMLElement;
+    expect(grade.querySelectorAll('tbody .tabela__linha').length).toBe(5);
+    expect(grade.querySelector('.tabela__resumo')?.textContent?.trim()).toBe(
+      'Mostrando 1–5 de 12 registros',
+    );
+
+    botaoPagina('3').click();
+    fixture.detectChanges();
+
+    expect(grade.querySelectorAll('tbody .tabela__linha').length).toBe(2);
+    expect(grade.querySelector('.tabela__resumo')?.textContent?.trim()).toBe(
+      'Mostrando 11–12 de 12 registros',
+    );
+  });
+
+  it('volta para a primeira página quando a lista de dados muda', () => {
+    fixture.componentRef.setInput('colunas', COLUNAS);
+    fixture.componentRef.setInput('dados', gerarRegistros(25));
+    fixture.detectChanges();
+
+    botaoPagina('3').click();
+    fixture.detectChanges();
+    expect(botaoPagina('3').getAttribute('aria-current')).toBe('page');
+
+    fixture.componentRef.setInput('dados', gerarRegistros(12));
+    fixture.detectChanges();
+
+    const grade = fixture.nativeElement as HTMLElement;
+    expect(botaoPagina('1').getAttribute('aria-current')).toBe('page');
+    expect(grade.querySelector('.tabela__resumo')?.textContent?.trim()).toBe(
+      'Mostrando 1–10 de 12 registros',
+    );
+  });
+
+  it('limita a cinco botões de página e acompanha a página atual', () => {
+    fixture.componentRef.setInput('colunas', COLUNAS);
+    fixture.componentRef.setInput('dados', gerarRegistros(100));
+    fixture.detectChanges();
+
+    const rotulos = () =>
+      Array.from((fixture.nativeElement as HTMLElement).querySelectorAll('.tabela__pagina'))
+        .map((botao) => botao.getAttribute('aria-label'))
+        .filter((rotulo) => /^Página \d+$/.test(rotulo ?? ''));
+
+    expect(rotulos()).toEqual(['Página 1', 'Página 2', 'Página 3', 'Página 4', 'Página 5']);
+
+    botaoPagina('5').click();
+    fixture.detectChanges();
+
+    expect(rotulos()).toEqual(['Página 3', 'Página 4', 'Página 5', 'Página 6', 'Página 7']);
+  });
+
+  function botaoPagina(numero: string): HTMLButtonElement {
+    const botao = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      `.tabela__pagina[aria-label="Página ${numero}"]`,
+    );
+    expect(botao).not.toBeNull();
+    return botao!;
+  }
+
+  function botaoNavegacao(rotulo: string): HTMLButtonElement {
+    const botao = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>(
+      `.tabela__pagina[aria-label="${rotulo}"]`,
+    );
+    expect(botao).not.toBeNull();
+    return botao!;
+  }
 });
+
+function gerarRegistros(quantidade: number): RegistroTeste[] {
+  return Array.from({ length: quantidade }, (_, indice) => ({
+    id: indice + 1,
+    nome: `Registro ${indice + 1}`,
+    valor: 10,
+    data: '2024-10-24T12:00',
+    status: 'Ativo',
+  }));
+}

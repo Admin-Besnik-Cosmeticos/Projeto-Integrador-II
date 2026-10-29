@@ -148,6 +148,64 @@
   font-size: 0.85rem;
 }
 
+.tabela__rodape {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1.25rem;
+  border-top: 1px solid #eadde9;
+}
+
+.tabela__resumo {
+  margin: 0;
+  color: #8d7396;
+  font-size: 0.82rem;
+}
+
+.tabela__paginacao {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.tabela__pagina {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2rem;
+  padding: 0 0.4rem;
+  border: 1px solid #dcc7dc;
+  border-radius: 8px;
+  background: #fff;
+  color: #a24dad;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tabela__pagina:hover:not(:disabled) {
+  background: #f4def5;
+}
+
+.tabela__pagina:focus-visible {
+  outline: 2px solid #a24dad;
+  outline-offset: 2px;
+}
+
+.tabela__pagina:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.tabela__pagina--ativa,
+.tabela__pagina--ativa:hover {
+  border-color: #a24dad;
+  background: #a24dad;
+  color: #fff;
+}
+
 .tabela__osso {
   display: block;
   height: 0.75rem;
@@ -195,5 +253,11 @@
   .tabela__celula {
     padding: 0.75rem 0.9rem;
     font-size: 0.85rem;
+  }
+
+  .tabela__rodape {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 0.75rem 0.9rem;
   }
 }

@@ -99,15 +99,8 @@ type Vista = {
     estoque: number;
     status: string;
   }>;
-  linhasPaginadas(): Array<{ id: string; nome: string }>;
-  totalRegistros(): number;
-  totalPaginas(): number;
-  paginaEfetiva(): number;
-  paginas(): number[];
-  intervaloInicio(): number;
-  intervaloFim(): number;
+  linhasFiltradas(): Array<{ id: string; nome: string }>;
   termoBusca(): string;
-  irParaPagina(pagina: number): void;
   modalAberto(): boolean;
   modalExclusaoAberto(): boolean;
   editandoId(): string | null;
@@ -171,40 +164,19 @@ describe('ProdutosComponent', () => {
     };
   }
 
-  it('carrega a listagem com status de estoque e primeira pagina', async () => {
+  it('carrega a listagem com status de estoque', async () => {
     const { vista } = await criarComponente();
 
     expect(vista.erroListagem()).toBe('');
     expect(vista.linhas().length).toBe(10);
-    expect(vista.linhasPaginadas().length).toBe(8);
-    expect(vista.totalPaginas()).toBe(2);
-    expect(vista.intervaloInicio()).toBe(1);
-    expect(vista.intervaloFim()).toBe(8);
     expect(vista.linhas()[0].status).toBe('Esgotado');
     expect(vista.linhas()[1].status).toBe('Baixo Estoque');
     expect(vista.linhas()[2].status).toBe('Em Estoque');
     expect(vista.linhas()[7].categoria).toBe('');
   });
 
-  it('navega entre as paginas do rodape', async () => {
-    const { vista } = await criarComponente();
-
-    expect(vista.paginas()).toEqual([1, 2]);
-
-    vista.irParaPagina(2);
-
-    expect(vista.paginaEfetiva()).toBe(2);
-    expect(vista.linhasPaginadas().length).toBe(2);
-    expect(vista.intervaloInicio()).toBe(9);
-    expect(vista.intervaloFim()).toBe(10);
-  });
-
-  it('filtra por nome e volta para a primeira pagina', async () => {
+  it('filtra por nome', async () => {
     const { fixture, vista, native } = await criarComponente();
-
-    vista.irParaPagina(2);
-    fixture.detectChanges();
-    expect(vista.paginaEfetiva()).toBe(2);
 
     const entrada = native.querySelector<HTMLInputElement>('#busca-produtos');
     expect(entrada).not.toBeNull();
@@ -214,14 +186,13 @@ describe('ProdutosComponent', () => {
     fixture.detectChanges();
 
     expect(vista.termoBusca()).toBe('a');
-    expect(vista.paginaEfetiva()).toBe(1);
 
     entrada!.value = 'batom';
     entrada!.dispatchEvent(new Event('input'));
     fixture.detectChanges();
 
-    expect(vista.totalRegistros()).toBe(1);
-    expect(vista.linhasPaginadas()[0].nome).toBe('Batom Cremoso');
+    expect(vista.linhasFiltradas().length).toBe(1);
+    expect(vista.linhasFiltradas()[0].nome).toBe('Batom Cremoso');
   });
 
   it('exibe mensagem de erro com botao para tentar novamente', async () => {
