@@ -136,17 +136,6 @@
     </footer>
   }
 
-  @if (mensagem() || mensagemErro()) {
-    <p
-      class="produtos__feedback"
-      [class.produtos__feedback--erro]="mensagemErro()"
-      role="status"
-      aria-live="polite"
-    >
-      {{ mensagemErro() || mensagem() }}
-    </p>
-  }
-
   <app-modal
     [titulo]="tituloModal()"
     [aberto]="modalAberto()"

@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ClientesComponent } from './clientes.component';
+import { ToastService } from '../../services/toast.service';
 
 const API_URL = '/api/clientes';
 
@@ -23,8 +24,6 @@ type Vista = {
   erroListagem(): string;
   clientesLista(): (typeof ANA)[];
   linhas(): unknown[];
-  mensagem(): string;
-  mensagemErro(): string;
   modalAberto(): boolean;
   modalExclusaoAberto(): boolean;
   editandoId(): string | null;
@@ -44,6 +43,8 @@ type Vista = {
 
 const vistas = (componente: ClientesComponent): Vista => componente as unknown as Vista;
 
+const toasts = () => TestBed.inject(ToastService).toasts();
+
 describe('ClientesComponent', () => {
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -53,6 +54,7 @@ describe('ClientesComponent', () => {
   });
 
   afterEach(() => {
+    TestBed.inject(ToastService).limpar();
     TestBed.inject(HttpTestingController).verify();
   });
 
@@ -150,7 +152,9 @@ describe('ClientesComponent', () => {
     await salvamento;
     expect(vista.modalAberto()).toBe(false);
     expect(vista.clientesLista().length).toBe(3);
-    expect(vista.mensagem()).toContain('cadastrada');
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].tipo).toBe('sucesso');
+    expect(toasts()[0].mensagem).toContain('cadastrada');
   });
 
   it('formata telefone no padrao de celular brasileiro', async () => {
@@ -241,7 +245,7 @@ describe('ClientesComponent', () => {
     await exclusao;
     expect(vista.clientesLista().length).toBe(1);
     expect(vista.modalExclusaoAberto()).toBe(false);
-    expect(vista.mensagem()).toContain('removida');
+    expect(toasts()[0].mensagem).toContain('removida');
   });
 
   it('mostra erro da API ao falhar exclusao', async () => {
@@ -265,7 +269,9 @@ describe('ClientesComponent', () => {
       .flush({ erro: 'Cliente nao encontrado.' }, { status: 404, statusText: 'Not Found' });
 
     await exclusao;
-    expect(vista.mensagemErro()).toContain('Cliente nao encontrado.');
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].tipo).toBe('erro');
+    expect(toasts()[0].mensagem).toContain('Cliente nao encontrado.');
     expect(vista.modalExclusaoAberto()).toBe(false);
   });
 });

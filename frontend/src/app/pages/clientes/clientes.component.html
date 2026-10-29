@@ -42,17 +42,6 @@
     (acaoSelecionada)="registrarAcao($event)"
   />
 
-  @if (mensagem() || mensagemErro()) {
-    <p
-      class="clientes__feedback"
-      [class.clientes__feedback--erro]="mensagemErro()"
-      role="status"
-      aria-live="polite"
-    >
-      {{ mensagemErro() || mensagem() }}
-    </p>
-  }
-
   <app-modal
     [titulo]="tituloModal()"
     [aberto]="modalAberto()"

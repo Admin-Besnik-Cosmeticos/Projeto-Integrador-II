@@ -8,6 +8,7 @@ import {
   TabelaComponent,
 } from '../../components/tabela/tabela.component';
 import { Produto, ProdutosError, ProdutosService } from '../../services/produtos.service';
+import { ToastService } from '../../services/toast.service';
 
 type StatusEstoque = 'Esgotado' | 'Baixo Estoque' | 'Em Estoque';
 
@@ -33,6 +34,7 @@ const MAXIMO_PAGINAS_VISIVEIS = 5;
 export class ProdutosComponent {
   private readonly fb = inject(FormBuilder);
   private readonly produtosService = inject(ProdutosService);
+  private readonly toast = inject(ToastService);
 
   protected readonly colunas: TabelaColuna<ProdutoLinha>[] = [
     { titulo: 'Nome', campo: 'nome', tipo: 'destaque' },
@@ -56,8 +58,6 @@ export class ProdutosComponent {
   protected readonly carregandoListagem = signal(true);
   protected readonly erroListagem = signal('');
   protected readonly produtosLista = signal<Produto[]>([]);
-  protected readonly mensagem = signal('');
-  protected readonly mensagemErro = signal('');
 
   protected readonly termoBusca = signal('');
   protected readonly paginaAtual = signal(1);
@@ -181,8 +181,6 @@ export class ProdutosComponent {
   protected async carregarProdutos(): Promise<void> {
     this.carregandoListagem.set(true);
     this.erroListagem.set('');
-    this.mensagem.set('');
-    this.mensagemErro.set('');
 
     try {
       const produtos = await this.produtosService.listar();
@@ -213,8 +211,6 @@ export class ProdutosComponent {
   }
 
   protected abrirModal(): void {
-    this.mensagem.set('');
-    this.mensagemErro.set('');
     this.editandoId.set(null);
     this.form.reset();
     this.modalAberto.set(true);
@@ -248,14 +244,12 @@ export class ProdutosComponent {
     const idEditando = this.editandoId();
 
     this.salvando.set(true);
-    this.mensagem.set('');
-    this.mensagemErro.set('');
 
     try {
       if (idEditando === null) {
         const criado = await this.produtosService.cadastrar(dados);
         this.produtosLista.set([...this.produtosLista(), criado]);
-        this.mensagem.set(`Produto ${criado.nome} cadastrado.`);
+        this.toast.sucesso(`Produto ${criado.nome} cadastrado.`);
       } else {
         const atualizado = await this.produtosService.atualizar(idEditando, dados);
         this.produtosLista.set(
@@ -263,11 +257,11 @@ export class ProdutosComponent {
             produto.id === atualizado.id ? atualizado : produto,
           ),
         );
-        this.mensagem.set(`Produto ${atualizado.nome} atualizado.`);
+        this.toast.sucesso(`Produto ${atualizado.nome} atualizado.`);
       }
       this.modalAberto.set(false);
     } catch (error) {
-      this.mensagemErro.set(this.mensagemDeErro(error));
+      this.toast.erro(this.mensagemDeErro(error));
     } finally {
       this.salvando.set(false);
     }
@@ -282,8 +276,6 @@ export class ProdutosComponent {
         preco: this.formatarPrecoEntrada(evento.registro.preco),
         quantidadeEstoque: String(evento.registro.estoque),
       });
-      this.mensagem.set('');
-      this.mensagemErro.set('');
       this.modalAberto.set(true);
       return;
     }
@@ -292,8 +284,6 @@ export class ProdutosComponent {
       const produto = this.produtosLista().find((item) => item.id === evento.registro.id);
       if (produto) {
         this.produtoParaExcluir.set(produto);
-        this.mensagem.set('');
-        this.mensagemErro.set('');
         this.modalExclusaoAberto.set(true);
       }
     }
@@ -313,17 +303,15 @@ export class ProdutosComponent {
     }
 
     this.excluindo.set(true);
-    this.mensagem.set('');
-    this.mensagemErro.set('');
 
     try {
       await this.produtosService.remover(produto.id);
       this.produtosLista.set(this.produtosLista().filter((item) => item.id !== produto.id));
-      this.mensagem.set(`Produto ${produto.nome} removido.`);
+      this.toast.sucesso(`Produto ${produto.nome} removido.`);
       this.modalExclusaoAberto.set(false);
       this.produtoParaExcluir.set(null);
     } catch (error) {
-      this.mensagemErro.set(this.mensagemDeErro(error));
+      this.toast.erro(this.mensagemDeErro(error));
       this.modalExclusaoAberto.set(false);
       this.produtoParaExcluir.set(null);
     } finally {

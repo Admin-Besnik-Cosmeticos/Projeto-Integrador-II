@@ -8,6 +8,7 @@ import {
   TabelaComponent,
 } from '../../components/tabela/tabela.component';
 import { Cliente, ClientesError, ClientesService } from '../../services/clientes.service';
+import { ToastService } from '../../services/toast.service';
 
 interface ClienteLinha {
   id: string;
@@ -27,6 +28,7 @@ interface ClienteLinha {
 export class ClientesComponent {
   private readonly fb = inject(FormBuilder);
   private readonly clientesService = inject(ClientesService);
+  private readonly toast = inject(ToastService);
 
   protected readonly colunas: TabelaColuna<ClienteLinha>[] = [
     { titulo: 'Nome', campo: 'nome', tipo: 'destaque' },
@@ -74,8 +76,6 @@ export class ClientesComponent {
   protected readonly carregandoListagem = signal(true);
   protected readonly erroListagem = signal('');
   protected readonly clientesLista = signal<Cliente[]>([]);
-  protected readonly mensagem = signal('');
-  protected readonly mensagemErro = signal('');
 
   protected readonly linhas = computed<ClienteLinha[]>(() =>
     this.clientesLista().map((cliente) => ({
@@ -135,8 +135,6 @@ export class ClientesComponent {
   protected async carregarClientes(): Promise<void> {
     this.carregandoListagem.set(true);
     this.erroListagem.set('');
-    this.mensagem.set('');
-    this.mensagemErro.set('');
 
     try {
       const clientes = await this.clientesService.listar();
@@ -149,8 +147,6 @@ export class ClientesComponent {
   }
 
   protected abrirModal(): void {
-    this.mensagem.set('');
-    this.mensagemErro.set('');
     this.editandoId.set(null);
     this.form.reset();
     this.modalAberto.set(true);
@@ -187,14 +183,12 @@ export class ClientesComponent {
     const idEditando = this.editandoId();
 
     this.salvando.set(true);
-    this.mensagem.set('');
-    this.mensagemErro.set('');
 
     try {
       if (idEditando === null) {
         const criado = await this.clientesService.cadastrar(dados);
         this.clientesLista.set([...this.clientesLista(), criado]);
-        this.mensagem.set(`Cliente ${criado.nome} cadastrada.`);
+        this.toast.sucesso(`Cliente ${criado.nome} cadastrada.`);
       } else {
         const atualizado = await this.clientesService.atualizar(idEditando, dados);
         this.clientesLista.set(
@@ -202,11 +196,11 @@ export class ClientesComponent {
             cliente.id === atualizado.id ? atualizado : cliente,
           ),
         );
-        this.mensagem.set(`Cliente ${atualizado.nome} atualizada.`);
+        this.toast.sucesso(`Cliente ${atualizado.nome} atualizada.`);
       }
       this.modalAberto.set(false);
     } catch (error) {
-      this.mensagemErro.set(this.mensagemDeErro(error));
+      this.toast.erro(this.mensagemDeErro(error));
     } finally {
       this.salvando.set(false);
     }
@@ -233,8 +227,6 @@ export class ClientesComponent {
         estado: evento.registro.estado,
         enderecoEntrega: evento.registro.endereco_entrega,
       });
-      this.mensagem.set('');
-      this.mensagemErro.set('');
       this.modalAberto.set(true);
       return;
     }
@@ -243,8 +235,6 @@ export class ClientesComponent {
       const cliente = this.clientesLista().find((item) => item.id === evento.registro.id);
       if (cliente) {
         this.clienteParaExcluir.set(cliente);
-        this.mensagem.set('');
-        this.mensagemErro.set('');
         this.modalExclusaoAberto.set(true);
       }
     }
@@ -264,17 +254,15 @@ export class ClientesComponent {
     }
 
     this.excluindo.set(true);
-    this.mensagem.set('');
-    this.mensagemErro.set('');
 
     try {
       await this.clientesService.remover(cliente.id);
       this.clientesLista.set(this.clientesLista().filter((item) => item.id !== cliente.id));
-      this.mensagem.set(`Cliente ${cliente.nome} removida.`);
+      this.toast.sucesso(`Cliente ${cliente.nome} removida.`);
       this.modalExclusaoAberto.set(false);
       this.clienteParaExcluir.set(null);
     } catch (error) {
-      this.mensagemErro.set(this.mensagemDeErro(error));
+      this.toast.erro(this.mensagemDeErro(error));
       this.modalExclusaoAberto.set(false);
       this.clienteParaExcluir.set(null);
     } finally {

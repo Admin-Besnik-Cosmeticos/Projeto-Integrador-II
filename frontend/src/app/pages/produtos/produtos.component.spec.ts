@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { ProdutosComponent } from './produtos.component';
+import { ToastService } from '../../services/toast.service';
 
 const API_URL = '/api/produtos';
 
@@ -111,8 +112,6 @@ type Vista = {
   modalExclusaoAberto(): boolean;
   editandoId(): string | null;
   tituloModal(): string;
-  mensagem(): string;
-  mensagemErro(): string;
   nomeErro: string;
   categoriaErro: string;
   precoErro: string;
@@ -129,6 +128,8 @@ type Vista = {
 
 const vistas = (componente: ProdutosComponent): Vista => componente as unknown as Vista;
 
+const toasts = () => TestBed.inject(ToastService).toasts();
+
 async function drenarMicrotasks(): Promise<void> {
   for (let i = 0; i < 20; i++) {
     await Promise.resolve();
@@ -144,6 +145,7 @@ describe('ProdutosComponent', () => {
   });
 
   afterEach(() => {
+    TestBed.inject(ToastService).limpar();
     TestBed.inject(HttpTestingController).verify();
   });
 
@@ -277,7 +279,9 @@ describe('ProdutosComponent', () => {
     await salvamento;
     expect(vista.modalAberto()).toBe(false);
     expect(vista.produtosLista().length).toBe(11);
-    expect(vista.mensagem()).toContain('cadastrado');
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].tipo).toBe('sucesso');
+    expect(toasts()[0].mensagem).toContain('cadastrado');
   });
 
   it('bloqueia cadastro com campos obrigatorios vazios', async () => {
@@ -350,7 +354,7 @@ describe('ProdutosComponent', () => {
     await salvamento;
     expect(vista.produtosLista()[0].nome).toBe('Base Líquida Matte 30ml');
     expect(vista.modalAberto()).toBe(false);
-    expect(vista.mensagem()).toContain('atualizado');
+    expect(toasts()[0].mensagem).toContain('atualizado');
   });
 
   it('exclui produto apos confirmacao', async () => {
@@ -367,7 +371,7 @@ describe('ProdutosComponent', () => {
     await exclusao;
     expect(vista.produtosLista().length).toBe(9);
     expect(vista.modalExclusaoAberto()).toBe(false);
-    expect(vista.mensagem()).toContain('removido');
+    expect(toasts()[0].mensagem).toContain('removido');
   });
 
   it('mostra erro da API ao falhar exclusao de produto em uso', async () => {
@@ -384,7 +388,9 @@ describe('ProdutosComponent', () => {
       );
 
     await exclusao;
-    expect(vista.mensagemErro()).toContain('vinculado a pedidos');
+    expect(toasts()).toHaveLength(1);
+    expect(toasts()[0].tipo).toBe('erro');
+    expect(toasts()[0].mensagem).toContain('vinculado a pedidos');
     expect(vista.produtosLista().length).toBe(10);
     expect(vista.modalExclusaoAberto()).toBe(false);
   });
