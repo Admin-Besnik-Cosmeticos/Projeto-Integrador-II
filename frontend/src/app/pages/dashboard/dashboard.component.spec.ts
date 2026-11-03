@@ -57,6 +57,8 @@ type Vista = {
   possuiSemCategoria(): boolean;
   produtosExibidos(): DashboardProdutoMaisVendido[];
   pedidosExibidos(): DashboardPedidoRecente[];
+  periodo(): string;
+  atualizarPeriodo(evento: Event): void;
   atualizarFiltroStatus(evento: Event): void;
   atualizarFiltroCategoria(evento: Event): void;
   atualizarOrdenacaoPedidos(evento: Event): void;
@@ -112,7 +114,7 @@ describe('DashboardComponent', () => {
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
 
-    http.expectOne('/api/dashboard').flush(resposta);
+    http.expectOne('/api/dashboard?periodo=mes').flush(resposta);
     await drenarMicrotasks();
     fixture.detectChanges();
 
@@ -124,9 +126,11 @@ describe('DashboardComponent', () => {
     const compilado = fixture.nativeElement as HTMLElement;
 
     expect(compilado.querySelector('h1')?.textContent).toContain('Dashboard');
-    expect(compilado.textContent).toContain('Vendas totais');
+    expect(compilado.textContent).toContain('Faturamento');
+    expect(compilado.textContent).toContain('Pedidos no período');
     expect(compilado.textContent).toContain('Produtos Mais Vendidos');
     expect(compilado.textContent).toContain('Pedidos Recentes');
+    expect(compilado.textContent).toContain('Mês atual');
   });
 
   it('exibe a variacao formatada quando a API retorna um numero', async () => {
@@ -142,6 +146,61 @@ describe('DashboardComponent', () => {
 
     expect(compilado.textContent).toContain('Sem base de comparação');
     expect(compilado.textContent).not.toContain('+0,0%');
+  });
+
+  it('abre no mes atual e recarrega ao trocar o periodo', async () => {
+    const fixture = await criarComponente();
+    const vista = vistas(fixture.componentInstance);
+    const http = TestBed.inject(HttpTestingController);
+
+    expect(vista.periodo()).toBe('mes');
+
+    vista.atualizarPeriodo(evento('trimestre'));
+    expect(vista.periodo()).toBe('trimestre');
+
+    http
+      .expectOne('/api/dashboard?periodo=trimestre')
+      .flush({ ...RESPOSTA, vendas_totais: 3000 });
+    await drenarMicrotasks();
+    fixture.detectChanges();
+
+    const texto = ((fixture.nativeElement as HTMLElement).textContent ?? '').replace(
+      /\u00a0/g,
+      ' ',
+    );
+    expect(texto).toContain('R$ 3.000,00');
+  });
+
+  it('adapta a comparacao da variacao ao periodo selecionado', async () => {
+    const fixture = await criarComponente();
+    const vista = vistas(fixture.componentInstance);
+    const http = TestBed.inject(HttpTestingController);
+
+    vista.atualizarPeriodo(evento('semestre'));
+    http.expectOne('/api/dashboard?periodo=semestre').flush(RESPOSTA);
+    await drenarMicrotasks();
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+      'em relação ao semestre anterior',
+    );
+  });
+
+  it('nao compara variacao no periodo total', async () => {
+    const fixture = await criarComponente();
+    const vista = vistas(fixture.componentInstance);
+    const http = TestBed.inject(HttpTestingController);
+
+    vista.atualizarPeriodo(evento('total'));
+    http
+      .expectOne('/api/dashboard?periodo=total')
+      .flush({ ...RESPOSTA, variacao_mes_anterior: null });
+    await drenarMicrotasks();
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain(
+      'Sem base de comparação',
+    );
   });
 
   it('lista as categorias dos produtos vendidos', async () => {

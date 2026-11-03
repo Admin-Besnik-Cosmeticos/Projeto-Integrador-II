@@ -3,6 +3,7 @@ import { Router } from '@angular/router';
 import {
   DashboardError,
   DashboardPedidoRecente,
+  DashboardPeriodo,
   DashboardProdutoMaisVendido,
   DashboardResposta,
   DashboardService,
@@ -40,6 +41,15 @@ export class DashboardComponent {
   protected readonly filtroCategoria = signal('');
   protected readonly ordenacaoPedidos = signal<OrdenacaoPedidos>('data-desc');
   protected readonly ordenacaoProdutos = signal<OrdenacaoProdutos>('vendidos-desc');
+  protected readonly periodo = signal<DashboardPeriodo>('mes');
+
+  protected readonly periodoOpcoes: { valor: DashboardPeriodo; rotulo: string }[] = [
+    { valor: 'mes', rotulo: 'Mês atual' },
+    { valor: 'trimestre', rotulo: 'Trimestre atual' },
+    { valor: 'semestre', rotulo: 'Semestre atual' },
+    { valor: 'ano', rotulo: 'Ano atual' },
+    { valor: 'total', rotulo: 'Total' },
+  ];
 
   protected readonly statusOpcoes: { valor: StatusPedido | ''; rotulo: string }[] = [
     { valor: '', rotulo: 'Todos os status' },
@@ -169,7 +179,7 @@ export class DashboardComponent {
     this.erro.set('');
 
     try {
-      this.dados.set(await this.dashboardService.obter());
+      this.dados.set(await this.dashboardService.obter(this.periodo()));
     } catch (error) {
       this.erro.set(this.mensagemDeErro(error));
       this.dados.set(null);
@@ -184,6 +194,11 @@ export class DashboardComponent {
 
   protected atualizarFiltroStatus(evento: Event): void {
     this.filtroStatus.set((evento.target as HTMLSelectElement).value as StatusPedido | '');
+  }
+
+  protected atualizarPeriodo(evento: Event): void {
+    this.periodo.set((evento.target as HTMLSelectElement).value as DashboardPeriodo);
+    void this.carregar();
   }
 
   protected atualizarFiltroCategoria(evento: Event): void {
@@ -224,10 +239,24 @@ export class DashboardComponent {
 
   protected textoVariacao(): string {
     const variacao = this.dados()?.variacao_mes_anterior ?? null;
-    if (variacao === null) {
+    if (variacao === null || this.periodo() === 'total') {
       return 'Sem base de comparação';
     }
-    return `${variacao > 0 ? '+' : ''}${variacao.toFixed(1).replace('.', ',')}% em relação ao mês anterior`;
+    const rotulo = this.rotuloPeriodoAnterior();
+    return `${variacao > 0 ? '+' : ''}${variacao.toFixed(1).replace('.', ',')}% em relação ao ${rotulo}`;
+  }
+
+  private rotuloPeriodoAnterior(): string {
+    switch (this.periodo()) {
+      case 'trimestre':
+        return 'trimestre anterior';
+      case 'semestre':
+        return 'semestre anterior';
+      case 'ano':
+        return 'ano anterior';
+      default:
+        return 'mês anterior';
+    }
   }
 
   protected produtos(): DashboardProdutoMaisVendido[] {

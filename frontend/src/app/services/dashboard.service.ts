@@ -33,6 +33,8 @@ export interface DashboardResposta extends DashboardIndicadores {
   pedidos_recentes: DashboardPedidoRecente[];
 }
 
+export type DashboardPeriodo = 'mes' | 'trimestre' | 'semestre' | 'ano' | 'total';
+
 export type DashboardErrorCode = 'network_error' | 'unexpected_error';
 
 export class DashboardError extends Error {
@@ -51,9 +53,11 @@ const DASHBOARD_ENDPOINT = '/api/dashboard';
 export class DashboardService {
   private readonly http = inject(HttpClient);
 
-  async obter(): Promise<DashboardResposta> {
+  async obter(periodo: DashboardPeriodo = 'total'): Promise<DashboardResposta> {
     try {
-      return await firstValueFrom(this.http.get<DashboardResposta>(DASHBOARD_ENDPOINT));
+      return await firstValueFrom(
+        this.http.get<DashboardResposta>(DASHBOARD_ENDPOINT, { params: { periodo } }),
+      );
     } catch (error) {
       throw this.toDashboardError(error);
     }

@@ -73,6 +73,31 @@ p {
   text-decoration: underline;
 }
 
+.dashboard__periodo {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.dashboard__periodo-campo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #8d7396;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.dashboard__periodo-campo select {
+  border: 1px solid #e5dbe6;
+  border-radius: 0.35rem;
+  background: #fff;
+  color: #5d2d63;
+  font: inherit;
+  font-size: 0.8rem;
+  padding: 0.45rem 1.8rem 0.45rem 0.65rem;
+}
+
 .dashboard__indicadores {
   display: grid;
   gap: 1rem;

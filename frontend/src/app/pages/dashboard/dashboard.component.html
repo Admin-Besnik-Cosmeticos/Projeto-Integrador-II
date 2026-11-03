@@ -10,9 +10,24 @@
     <app-error-message [mensagem]="erro()" (tentarNovamente)="carregar()" />
   }
 
+  <div class="dashboard__periodo">
+    <label class="dashboard__periodo-campo" for="filtro-periodo">
+      <span>Período</span>
+      <select
+        id="filtro-periodo"
+        [value]="periodo()"
+        (change)="atualizarPeriodo($event)"
+      >
+        @for (opcao of periodoOpcoes; track opcao.valor) {
+          <option [value]="opcao.valor">{{ opcao.rotulo }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
   <div class="dashboard__indicadores">
     <article class="indicador">
-      <span class="indicador__rotulo">Vendas totais</span>
+      <span class="indicador__rotulo">Faturamento</span>
       @if (carregando()) {
         <span class="indicador__esqueleto"></span>
       } @else {
@@ -20,7 +35,7 @@
       }
     </article>
     <article class="indicador">
-      <span class="indicador__rotulo">Pedidos do mês</span>
+      <span class="indicador__rotulo">Pedidos no período</span>
       @if (carregando()) {
         <span class="indicador__esqueleto"></span>
       } @else {

@@ -23,8 +23,8 @@ export interface PedidoRecente {
 export interface Dashboard {
   vendas_totais: number;
   pedidos_mes: number;
-  // Percentual em relacao ao mes anterior; null quando o mes anterior
-  // nao tem pedidos e o atual tem (sem base de comparacao).
+  // Percentual em relacao ao periodo anterior equivalente; null quando nao
+  // ha base de comparacao (periodo total ou anterior sem pedidos).
   variacao_mes_anterior: number | null;
   clientes_ativos: number;
   ticket_medio: number;
@@ -32,14 +32,40 @@ export interface Dashboard {
   pedidos_recentes: PedidoRecente[];
 }
 
+export type DashboardPeriodo = 'mes' | 'trimestre' | 'semestre' | 'ano' | 'total';
+
+const PERIODOS: readonly DashboardPeriodo[] = [
+  'mes',
+  'trimestre',
+  'semestre',
+  'ano',
+  'total',
+];
+
+export function normalizarPeriodo(valor: unknown): DashboardPeriodo {
+  return typeof valor === 'string' && (PERIODOS as readonly string[]).includes(valor)
+    ? (valor as DashboardPeriodo)
+    : 'total';
+}
+
+interface IntervaloPeriodo {
+  /** Limite inferior inclusivo no formato YYYY-MM-DD; null representa sem limite. */
+  inicio: string | null;
+  /** Limite superior inclusivo no formato YYYY-MM-DD; null representa sem limite. */
+  fim: string | null;
+  inicioAnterior: string | null;
+  fimAnterior: string | null;
+}
+
+
 interface ResumoVendasRow {
   vendas_totais: string | number;
   total_pedidos: string | number;
 }
 
-interface ResumoMesRow {
-  pedidos_mes_atual: string | number;
-  pedidos_mes_anterior: string | number;
+interface ResumoPeriodoRow {
+  pedidos_periodo: string | number;
+  pedidos_periodo_anterior: string | number;
   clientes_ativos: string | number;
 }
 
@@ -93,7 +119,67 @@ function calcularTicketMedio(vendasTotais: number, totalPedidos: number): number
   return arredondar(vendasTotais / totalPedidos);
 }
 
-async function buscarResumoVendas(): Promise<ResumoVendasRow> {
+function partesDataAtual(): { ano: number; mes: number } {
+  const partes = new Intl.DateTimeFormat('en-CA', {
+    timeZone: FUSO_HORARIO,
+    year: 'numeric',
+    month: '2-digit',
+  }).formatToParts(new Date());
+
+  const ano = Number(partes.find((parte) => parte.type === 'year')?.value);
+  const mes = Number(partes.find((parte) => parte.type === 'month')?.value);
+  return { ano, mes };
+}
+
+function formatarData(ano: number, mes: number, dia: number): string {
+  return new Date(Date.UTC(ano, mes - 1, dia)).toISOString().slice(0, 10);
+}
+
+// Calcula os limites do periodo atual e do periodo anterior equivalente.
+// As datas sao comparadas no fuso da loja e os limites sao inclusivos.
+function intervaloPeriodo(periodo: DashboardPeriodo): IntervaloPeriodo {
+  if (periodo === 'total') {
+    return {
+      inicio: null,
+      fim: null,
+      inicioAnterior: null,
+      fimAnterior: null,
+    };
+  }
+
+  const { ano, mes } = partesDataAtual();
+
+  let primeiroMes: number;
+  let duracaoMeses: number;
+
+  switch (periodo) {
+    case 'mes':
+      primeiroMes = mes;
+      duracaoMeses = 1;
+      break;
+    case 'trimestre':
+      primeiroMes = Math.floor((mes - 1) / 3) * 3 + 1;
+      duracaoMeses = 3;
+      break;
+    case 'semestre':
+      primeiroMes = mes <= 6 ? 1 : 7;
+      duracaoMeses = 6;
+      break;
+    case 'ano':
+      primeiroMes = 1;
+      duracaoMeses = 12;
+      break;
+  }
+
+  return {
+    inicio: formatarData(ano, primeiroMes, 1),
+    fim: formatarData(ano, primeiroMes + duracaoMeses, 0),
+    inicioAnterior: formatarData(ano, primeiroMes - duracaoMeses, 1),
+    fimAnterior: formatarData(ano, primeiroMes, 0),
+  };
+}
+
+async function buscarResumoVendas({ inicio, fim }: IntervaloPeriodo): Promise<ResumoVendasRow> {
   // Somente pedidos faturaveis entram no valor vendido e no ticket medio.
   // Cancelados, em preparo e pendentes ainda nao representam receita.
   const rows = (await sql`
@@ -101,6 +187,8 @@ async function buscarResumoVendas(): Promise<ResumoVendasRow> {
       SELECT id
       FROM pedidos
       WHERE status IN ('Pago', 'Enviado', 'Entregue')
+        AND (${inicio}::date IS NULL OR (data_pedido AT TIME ZONE ${FUSO_HORARIO})::date >= ${inicio}::date)
+        AND (${fim}::date IS NULL OR (data_pedido AT TIME ZONE ${FUSO_HORARIO})::date <= ${fim}::date)
     )
     SELECT
       COALESCE((
@@ -113,32 +201,40 @@ async function buscarResumoVendas(): Promise<ResumoVendasRow> {
   return rows[0] ?? { vendas_totais: 0, total_pedidos: 0 };
 }
 
-async function buscarResumoMes(): Promise<ResumoMesRow> {
+async function buscarResumoPeriodo({
+  inicio,
+  fim,
+  inicioAnterior,
+  fimAnterior,
+}: IntervaloPeriodo): Promise<ResumoPeriodoRow> {
   const rows = (await sql`
-    WITH periodo AS (
-      SELECT date_trunc('month', now() AT TIME ZONE ${FUSO_HORARIO}) AS inicio_mes_atual
-    )
     SELECT
       COUNT(*) FILTER (
-        WHERE (p.data_pedido AT TIME ZONE ${FUSO_HORARIO}) >= periodo.inicio_mes_atual
-      ) AS pedidos_mes_atual,
+        WHERE (${inicio}::date IS NULL OR (p.data_pedido AT TIME ZONE ${FUSO_HORARIO})::date >= ${inicio}::date)
+          AND (${fim}::date IS NULL OR (p.data_pedido AT TIME ZONE ${FUSO_HORARIO})::date <= ${fim}::date)
+      ) AS pedidos_periodo,
       COUNT(*) FILTER (
-        WHERE (p.data_pedido AT TIME ZONE ${FUSO_HORARIO}) < periodo.inicio_mes_atual
-      ) AS pedidos_mes_anterior,
-      (
-        SELECT COUNT(DISTINCT id_cliente)
-        FROM pedidos
-        WHERE data_pedido >= now() - INTERVAL '30 days'
+        WHERE ${inicioAnterior}::date IS NOT NULL
+          AND (p.data_pedido AT TIME ZONE ${FUSO_HORARIO})::date >= ${inicioAnterior}::date
+          AND (p.data_pedido AT TIME ZONE ${FUSO_HORARIO})::date <= ${fimAnterior}::date
+      ) AS pedidos_periodo_anterior,
+      COUNT(DISTINCT p.id_cliente) FILTER (
+        WHERE (${inicio}::date IS NULL OR (p.data_pedido AT TIME ZONE ${FUSO_HORARIO})::date >= ${inicio}::date)
+          AND (${fim}::date IS NULL OR (p.data_pedido AT TIME ZONE ${FUSO_HORARIO})::date <= ${fim}::date)
       ) AS clientes_ativos
-    FROM periodo
-    LEFT JOIN pedidos p
-      ON (p.data_pedido AT TIME ZONE ${FUSO_HORARIO}) >= periodo.inicio_mes_atual - INTERVAL '1 month'
-     AND (p.data_pedido AT TIME ZONE ${FUSO_HORARIO}) < periodo.inicio_mes_atual + INTERVAL '1 month'
-  `) as unknown as ResumoMesRow[];
-  return rows[0] ?? { pedidos_mes_atual: 0, pedidos_mes_anterior: 0, clientes_ativos: 0 };
+    FROM pedidos p
+  `) as unknown as ResumoPeriodoRow[];
+  return rows[0] ?? {
+    pedidos_periodo: 0,
+    pedidos_periodo_anterior: 0,
+    clientes_ativos: 0,
+  };
 }
 
-async function buscarProdutosMaisVendidos(): Promise<ProdutoMaisVendido[]> {
+async function buscarProdutosMaisVendidos({
+  inicio,
+  fim,
+}: IntervaloPeriodo): Promise<ProdutoMaisVendido[]> {
   const rows = (await sql`
     SELECT
       pr.id,
@@ -148,7 +244,10 @@ async function buscarProdutosMaisVendidos(): Promise<ProdutoMaisVendido[]> {
       SUM(ip.quantidade) AS quantidade_vendida,
       SUM(ip.quantidade * ip.preco_unitario) AS valor_vendido
     FROM itens_pedido ip
+    JOIN pedidos p ON p.id = ip.id_pedido
     JOIN produtos pr ON pr.id = ip.id_produto
+    WHERE (${inicio}::date IS NULL OR (p.data_pedido AT TIME ZONE ${FUSO_HORARIO})::date >= ${inicio}::date)
+      AND (${fim}::date IS NULL OR (p.data_pedido AT TIME ZONE ${FUSO_HORARIO})::date <= ${fim}::date)
     GROUP BY pr.id, pr.nome, pr.categoria, pr.preco
     ORDER BY quantidade_vendida DESC, pr.nome
     LIMIT ${LIMITE_PRODUTOS_MAIS_VENDIDOS}
@@ -164,7 +263,10 @@ async function buscarProdutosMaisVendidos(): Promise<ProdutoMaisVendido[]> {
   }));
 }
 
-async function buscarPedidosRecentes(): Promise<PedidoRecente[]> {
+async function buscarPedidosRecentes({
+  inicio,
+  fim,
+}: IntervaloPeriodo): Promise<PedidoRecente[]> {
   const rows = (await sql`
     SELECT
       p.id,
@@ -177,6 +279,8 @@ async function buscarPedidosRecentes(): Promise<PedidoRecente[]> {
     FROM pedidos p
     JOIN clientes c ON c.id = p.id_cliente
     LEFT JOIN itens_pedido ip ON ip.id_pedido = p.id
+    WHERE (${inicio}::date IS NULL OR (p.data_pedido AT TIME ZONE ${FUSO_HORARIO})::date >= ${inicio}::date)
+      AND (${fim}::date IS NULL OR (p.data_pedido AT TIME ZONE ${FUSO_HORARIO})::date <= ${fim}::date)
     GROUP BY p.id, p.data_pedido, p.status, c.id, c.nome
     ORDER BY p.data_pedido DESC
     LIMIT ${LIMITE_PEDIDOS_RECENTES}
@@ -193,25 +297,29 @@ async function buscarPedidosRecentes(): Promise<PedidoRecente[]> {
   }));
 }
 
-export async function getDashboard(): Promise<Dashboard> {
-  const [resumoVendas, resumoMes, produtosMaisVendidos, pedidosRecentes] =
+export async function getDashboard(
+  periodo: DashboardPeriodo = 'total',
+): Promise<Dashboard> {
+  const intervalo = intervaloPeriodo(periodo);
+
+  const [resumoVendas, resumoPeriodo, produtosMaisVendidos, pedidosRecentes] =
     await Promise.all([
-      buscarResumoVendas(),
-      buscarResumoMes(),
-      buscarProdutosMaisVendidos(),
-      buscarPedidosRecentes(),
+      buscarResumoVendas(intervalo),
+      buscarResumoPeriodo(intervalo),
+      buscarProdutosMaisVendidos(intervalo),
+      buscarPedidosRecentes(intervalo),
     ]);
 
   const vendasTotais = paraNumero(resumoVendas.vendas_totais);
   const totalPedidos = paraNumero(resumoVendas.total_pedidos);
-  const pedidosDoMes = paraNumero(resumoMes.pedidos_mes_atual);
-  const pedidosMesAnterior = paraNumero(resumoMes.pedidos_mes_anterior);
+  const pedidosPeriodo = paraNumero(resumoPeriodo.pedidos_periodo);
+  const pedidosPeriodoAnterior = paraNumero(resumoPeriodo.pedidos_periodo_anterior);
 
   return {
     vendas_totais: vendasTotais,
-    pedidos_mes: pedidosDoMes,
-    variacao_mes_anterior: calcularVariacao(pedidosDoMes, pedidosMesAnterior),
-    clientes_ativos: paraNumero(resumoMes.clientes_ativos),
+    pedidos_mes: pedidosPeriodo,
+    variacao_mes_anterior: calcularVariacao(pedidosPeriodo, pedidosPeriodoAnterior),
+    clientes_ativos: paraNumero(resumoPeriodo.clientes_ativos),
     ticket_medio: calcularTicketMedio(vendasTotais, totalPedidos),
     produtos_mais_vendidos: produtosMaisVendidos,
     pedidos_recentes: pedidosRecentes,
