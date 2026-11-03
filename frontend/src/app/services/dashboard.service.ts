@@ -13,7 +13,7 @@ export interface DashboardIndicadores {
 
 export interface DashboardProdutoMaisVendido {
   produto: string;
-  categoria: string;
+  categoria: string | null;
   preco: number;
   vendidos: number;
   faturamento: number;

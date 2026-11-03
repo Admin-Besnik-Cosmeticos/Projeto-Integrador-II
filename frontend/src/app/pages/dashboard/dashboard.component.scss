@@ -25,6 +25,13 @@ p {
   min-width: 0;
 }
 
+.dashboard__filtros {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
 .dashboard__filtro select {
   border: 1px solid #e5dbe6;
   border-radius: 0.35rem;
@@ -178,6 +185,19 @@ p {
   .dashboard__secao-cabecalho {
     flex-direction: column;
     gap: 0.25rem;
+  }
+
+  .dashboard__filtros {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .dashboard__filtro {
+    flex: 1 1 10rem;
+  }
+
+  .dashboard__filtro select {
+    width: 100%;
   }
 
   .dashboard__erro {

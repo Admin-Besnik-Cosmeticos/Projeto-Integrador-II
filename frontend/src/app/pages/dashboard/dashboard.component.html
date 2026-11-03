@@ -55,19 +55,44 @@
           <h2>Produtos Mais Vendidos</h2>
           <span>Desempenho dos produtos</span>
         </div>
-        <label class="dashboard__filtro">
-          <span class="visualmente-oculto">Filtrar produtos por categoria</span>
-          <select aria-label="Filtrar produtos por categoria">
-            <option>Categoria</option>
-          </select>
-        </label>
+        <div class="dashboard__filtros">
+          <label class="dashboard__filtro">
+            <span class="visualmente-oculto">Filtrar produtos por categoria</span>
+            <select
+              aria-label="Filtrar produtos por categoria"
+              [value]="filtroCategoria()"
+              (change)="atualizarFiltroCategoria($event)"
+            >
+              <option value="">Todas as categorias</option>
+              @for (categoria of categorias(); track categoria) {
+                <option [value]="categoria">{{ categoria }}</option>
+              }
+              @if (possuiSemCategoria()) {
+                <option value="__sem_categoria__">Sem categoria</option>
+              }
+            </select>
+          </label>
+          <label class="dashboard__filtro">
+            <span class="visualmente-oculto">Ordenar produtos por valor</span>
+            <select
+              aria-label="Ordenar produtos por valor"
+              [value]="ordenacaoProdutos()"
+              (change)="atualizarOrdenacaoProdutos($event)"
+            >
+              @for (opcao of ordenacaoProdutosOpcoes; track opcao.valor) {
+                <option [value]="opcao.valor">{{ opcao.rotulo }}</option>
+              }
+            </select>
+          </label>
+        </div>
       </div>
       <app-tabela
         [colunas]="produtosColunas"
-        [dados]="produtos()"
+        [dados]="produtosExibidos()"
         [acoes]="produtosAcoes"
         [carregando]="carregando()"
         [linhasCarregando]="5"
+        [tamanhoPagina]="5"
         mensagemVazio="Nenhum produto vendido"
         descricaoVazio="Os produtos vendidos aparecerão aqui."
         (acaoSelecionada)="registrarAcao($event)"
@@ -80,19 +105,40 @@
           <h2>Pedidos Recentes</h2>
           <span>Últimos pedidos realizados</span>
         </div>
-        <label class="dashboard__filtro">
-          <span class="visualmente-oculto">Filtrar pedidos por status</span>
-          <select aria-label="Filtrar pedidos por status">
-            <option>Status</option>
-          </select>
-        </label>
+        <div class="dashboard__filtros">
+          <label class="dashboard__filtro">
+            <span class="visualmente-oculto">Filtrar pedidos por status</span>
+            <select
+              aria-label="Filtrar pedidos por status"
+              [value]="filtroStatus()"
+              (change)="atualizarFiltroStatus($event)"
+            >
+              @for (opcao of statusOpcoes; track opcao.valor) {
+                <option [value]="opcao.valor">{{ opcao.rotulo }}</option>
+              }
+            </select>
+          </label>
+          <label class="dashboard__filtro">
+            <span class="visualmente-oculto">Ordenar pedidos</span>
+            <select
+              aria-label="Ordenar pedidos por data ou valor"
+              [value]="ordenacaoPedidos()"
+              (change)="atualizarOrdenacaoPedidos($event)"
+            >
+              @for (opcao of ordenacaoPedidosOpcoes; track opcao.valor) {
+                <option [value]="opcao.valor">{{ opcao.rotulo }}</option>
+              }
+            </select>
+          </label>
+        </div>
       </div>
       <app-tabela
         [colunas]="pedidosColunas"
-        [dados]="pedidos()"
+        [dados]="pedidosExibidos()"
         [acoes]="pedidosAcoes"
         [carregando]="carregando()"
         [linhasCarregando]="5"
+        [tamanhoPagina]="5"
         mensagemVazio="Nenhum pedido recente"
         descricaoVazio="Os pedidos recentes aparecerão aqui."
         (acaoSelecionada)="registrarAcao($event)"
