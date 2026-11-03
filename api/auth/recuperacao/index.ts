@@ -24,8 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const tipo = (body as { tipo?: unknown } | null)?.tipo;
         const chave = (body as { chave?: unknown } | null)?.chave;
         const novaSenha = (body as { novaSenha?: unknown } | null)?.novaSenha;
-        const senhaAtual = (body as { senhaAtual?: unknown } | null)?.senhaAtual;
-        const result = await resetPassword(email, tipo, chave, novaSenha, senhaAtual);
+        const result = await resetPassword(email, tipo, chave, novaSenha);
         return res.status(200).json({ message: result.message });
       }
       default:

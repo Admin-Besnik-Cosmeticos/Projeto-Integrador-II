@@ -19,7 +19,7 @@ export class SidebarComponent {
   private readonly router = inject(Router);
 
   protected readonly user = this.authService.getUser();
-  protected readonly userName = this.user?.email?.split('@')[0] ?? 'Usuário';
+  protected readonly userName = this.user?.nome?.trim() || 'Usuário';
   protected readonly userRole = this.authService.isAdmin() ? 'Administrador' : 'Usuário';
 
   protected readonly items: NavigationItem[] = [

@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 
 export interface AuthUser {
   id: string;
+  nome?: string;
   email: string;
   admin: boolean;
 }
@@ -49,6 +50,22 @@ export interface RecuperacaoResponse {
   message: string;
 }
 
+export interface PerfilResponse {
+  user: AuthUser;
+}
+
+export type PerfilErrorCode = 'invalid_profile' | 'network_error' | 'unexpected_error';
+
+export class PerfilError extends Error {
+  constructor(
+    message: string,
+    readonly code: PerfilErrorCode,
+  ) {
+    super(message);
+    this.name = 'PerfilError';
+  }
+}
+
 const RECUPERACAO_ENDPOINT = '/api/auth/recuperacao';
 
 @Injectable({ providedIn: 'root' })
@@ -87,8 +104,14 @@ export class AuthService {
     tipo: RecuperacaoTipo = 'recuperacao',
   ): Promise<RecuperacaoResponse> {
     try {
+      const options =
+        tipo === 'alteracao' ? { headers: this.authHeaders() } : undefined;
       return await firstValueFrom(
-        this.http.post<RecuperacaoResponse>(RECUPERACAO_ENDPOINT, { email, tipo }),
+        this.http.post<RecuperacaoResponse>(
+          RECUPERACAO_ENDPOINT,
+          { email, tipo },
+          options,
+        ),
       );
     } catch (error) {
       throw this.toRecuperacaoError(error, 'invalid_email');
@@ -100,18 +123,52 @@ export class AuthService {
     chave: string,
     novaSenha: string,
     tipo: RecuperacaoTipo = 'recuperacao',
+    senhaAtual?: string,
   ): Promise<RecuperacaoResponse> {
     try {
+      const body: {
+        email: string;
+        tipo: RecuperacaoTipo;
+        chave: string;
+        novaSenha: string;
+        senhaAtual?: string;
+      } = { email, tipo, chave, novaSenha };
+      if (senhaAtual !== undefined) {
+        body.senhaAtual = senhaAtual;
+      }
       return await firstValueFrom(
-        this.http.put<RecuperacaoResponse>(RECUPERACAO_ENDPOINT, {
-          email,
-          tipo,
-          chave,
-          novaSenha,
-        }),
+        this.http.put<RecuperacaoResponse>(RECUPERACAO_ENDPOINT, body),
       );
     } catch (error) {
       throw this.toRecuperacaoError(error, 'invalid_code');
+    }
+  }
+
+  async obterPerfil(): Promise<AuthUser> {
+    try {
+      const response = await firstValueFrom(
+        this.http.get<PerfilResponse>('/api/auth/perfil', { headers: this.authHeaders() }),
+      );
+      this.persistUser(response.user);
+      return response.user;
+    } catch (error) {
+      throw this.toPerfilError(error);
+    }
+  }
+
+  async atualizarPerfil(nome: string, email: string): Promise<AuthUser> {
+    try {
+      const response = await firstValueFrom(
+        this.http.put<PerfilResponse>(
+          '/api/auth/perfil',
+          { nome, email },
+          { headers: this.authHeaders() },
+        ),
+      );
+      this.persistUser(response.user);
+      return response.user;
+    } catch (error) {
+      throw this.toPerfilError(error);
     }
   }
 
@@ -164,6 +221,16 @@ export class AuthService {
     storage.setItem(USER_KEY, JSON.stringify(response.user));
   }
 
+  private persistUser(user: AuthUser): void {
+    const storage = localStorage.getItem(TOKEN_KEY) ? localStorage : sessionStorage;
+    storage.setItem(USER_KEY, JSON.stringify(user));
+  }
+
+  private authHeaders(): { Authorization: string } {
+    const token = this.getToken();
+    return { Authorization: `Bearer ${token ?? ''}` };
+  }
+
   clearSession(): void {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(EXPIRES_AT_KEY);
@@ -213,5 +280,24 @@ export class AuthService {
     }
 
     return new RecuperacaoError('Nao foi possivel concluir a operacao.', 'unexpected_error');
+  }
+
+  private toPerfilError(error: unknown): PerfilError {
+    if (error instanceof PerfilError) {
+      return error;
+    }
+
+    if (error instanceof HttpErrorResponse) {
+      if (error.status === 0) {
+        return new PerfilError('Nao foi possivel conectar ao servidor.', 'network_error');
+      }
+
+      const body = error.error as { erro?: unknown } | null;
+      const message =
+        body && typeof body.erro === 'string' ? body.erro : 'Nao foi possivel atualizar o perfil.';
+      return new PerfilError(message, 'invalid_profile');
+    }
+
+    return new PerfilError('Nao foi possivel atualizar o perfil.', 'unexpected_error');
   }
 }

@@ -1,59 +1,114 @@
 # Frontend
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 21.2.24.
+Aplicação web do Smart Beauty, desenvolvida com Angular 21, TypeScript e SCSS.
+O frontend fornece a interface de autenticação, dashboard, clientes, produtos,
+pedidos e configurações do sistema.
 
-## Development server
+## Pré-requisitos
 
-To start a local development server, run:
+- Node.js 22.x
+- npm 11.x
+- API local disponível em `http://localhost:3000` quando forem necessárias
+  operações que dependem do backend
 
-```bash
-ng serve
-```
+As versões recomendadas estão definidas no [`package.json`](package.json).
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+## Instalação
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
-
-```bash
-ng generate component component-name
-```
-
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+Na raiz do repositório, a forma recomendada de instalar todas as dependências é:
 
 ```bash
-ng generate --help
+npm run install-all
 ```
 
-## Building
-
-To build the project run:
+Para instalar somente as dependências do frontend:
 
 ```bash
-ng build
+cd frontend
+npm install
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
+## Desenvolvimento
 
-## Running unit tests
-
-To execute unit tests with the [Vitest](https://vitest.dev/) test runner, use the following command:
+Para iniciar o servidor com o proxy configurado para a API:
 
 ```bash
-ng test
+cd frontend
+npm run start:proxy
 ```
 
-## Running end-to-end tests
+A aplicação ficará disponível em `http://localhost:4200`. O proxy definido em
+[`proxy.conf.json`](proxy.conf.json) encaminha as requisições `/api/*` para
+`http://localhost:3000`.
 
-For end-to-end (e2e) testing, run:
+Também é possível iniciar o frontend junto com a API a partir da raiz:
 
 ```bash
-ng e2e
+npm run dev:all
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+O Angular recarrega automaticamente a aplicação após alterações nos arquivos
+de código.
 
-## Additional Resources
+## Estrutura principal
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+```text
+src/
+├── app/
+│   ├── components/   # Componentes reutilizáveis
+│   ├── layouts/      # Estruturas de layout da aplicação
+│   ├── pages/        # Telas e páginas
+│   └── services/     # Comunicação com a API e regras do frontend
+├── index.html
+├── main.ts
+└── styles.scss
+public/
+├── assets/            # Imagens e recursos estáticos
+└── favicon.ico        # Ícone exibido pelo navegador
+```
+
+Novos componentes devem seguir a convenção do Angular e usar SCSS:
+
+```bash
+npx ng generate component components/nome-do-componente
+```
+
+## Build
+
+Para gerar a versão de produção:
+
+```bash
+cd frontend
+npm run build
+```
+
+Os artefatos são gerados em `dist/frontend/browser`.
+
+## Testes e verificação de tipos
+
+Para executar os testes unitários:
+
+```bash
+cd frontend
+npm test -- --watch=false
+```
+
+Para verificar os tipos TypeScript:
+
+```bash
+npm run type-check
+```
+
+## Recursos estáticos
+
+Arquivos colocados em [`public/`](public/) são copiados para o build sem
+processamento. O favicon usado pelo navegador é
+[`public/favicon.ico`](public/favicon.ico), referenciado em
+[`src/index.html`](src/index.html).
+
+## Documentação relacionada
+
+- [`../README.md`](../README.md) — visão geral do projeto e execução do workspace
+- [`../api/README.md`](../api/README.md) — rotas e funcionamento da API
+- [`../services/README.md`](../services/README.md) — regras de negócio
+- [`../database/README.md`](../database/README.md) — banco de dados e migrações

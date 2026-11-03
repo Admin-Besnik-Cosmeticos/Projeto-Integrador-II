@@ -6,6 +6,7 @@ import { sendPasswordRecoveryEmail } from './email.service.js';
 
 interface UsuarioAuthRow {
   id: string;
+  nome: string;
   email: string;
   senha: string;
   admin: boolean;
@@ -13,6 +14,7 @@ interface UsuarioAuthRow {
 
 export interface AuthUser {
   id: string;
+  nome: string;
   email: string;
   admin: boolean;
 }
@@ -48,6 +50,13 @@ export class InvalidRecoveryKeyError extends Error {
   constructor(message = 'Chave invalida ou expirada.') {
     super(message);
     this.name = 'InvalidRecoveryKeyError';
+  }
+}
+
+export class InvalidProfileError extends Error {
+  constructor(message = 'Dados do perfil invalidos.') {
+    super(message);
+    this.name = 'InvalidProfileError';
   }
 }
 
@@ -177,26 +186,22 @@ export async function resetPassword(
   emailInput: unknown,
   tipoInput: unknown,
   chaveInput: unknown,
-  novaSenhaInput: unknown,
-  senhaAtualInput: unknown
+  novaSenhaInput: unknown
 ): Promise<{ message: string }> {
   const email = normalizeEmail(emailInput);
   const tipo = normalizeTipo(tipoInput);
   const chave = typeof chaveInput === 'string' ? chaveInput.trim() : '';
   const novaSenha = typeof novaSenhaInput === 'string' ? novaSenhaInput : '';
-  const senhaAtual = typeof senhaAtualInput === 'string' ? senhaAtualInput : '';
 
   if (!chave || !novaSenha) {
     throw new InvalidRecoveryRequestError('Dados invalidos.');
   }
+
   if (chave.length !== 8) {
     throw new InvalidRecoveryKeyError();
   }
   if (novaSenha.length < 8) {
     throw new InvalidRecoveryRequestError('Nova senha deve ter pelo menos 8 caracteres.');
-  }
-  if (tipo === 'alteracao' && !senhaAtual) {
-    throw new InvalidRecoveryRequestError('Senha atual obrigatoria.');
   }
 
   const rows = (await sql`
@@ -219,13 +224,6 @@ export async function resetPassword(
     throw new InvalidRecoveryKeyError();
   }
 
-  if (tipo === 'alteracao') {
-    const senhaAtualValida = await bcrypt.compare(senhaAtual, usuario.senha);
-    if (!senhaAtualValida) {
-      throw new InvalidCredentialsError();
-    }
-  }
-
   const saltRounds = Number(process.env.BCRYPT_SALT_ROUNDS ?? 12);
   if (!Number.isInteger(saltRounds) || saltRounds < 4 || saltRounds > 31) {
     throw new Error('BCRYPT_SALT_ROUNDS invalido.');
@@ -244,6 +242,98 @@ export async function resetPassword(
   `;
 
   return { message: 'Senha alterada com sucesso.' };
+}
+
+function extractToken(tokenInput: unknown): string {
+  return typeof tokenInput === 'string'
+    ? tokenInput.replace(/^Bearer\s+/i, '').trim()
+    : '';
+}
+
+async function findUserByToken(
+  tokenInput: unknown,
+): Promise<{ id: string; nome: string; email: string; admin: boolean }> {
+  const token = extractToken(tokenInput);
+  if (!token) {
+    throw new InvalidTokenError();
+  }
+
+  const jwtSecret = process.env.JWT_SECRET;
+  if (!jwtSecret) {
+    throw new Error('JWT_SECRET nao definido.');
+  }
+
+  let decoded: JwtPayload;
+  try {
+    decoded = jwt.verify(token, jwtSecret) as JwtPayload;
+  } catch {
+    throw new InvalidTokenError();
+  }
+
+  const userId = typeof decoded.id === 'string' ? decoded.id : '';
+  const rows = (await sql`
+    SELECT id, nome, email, admin
+    FROM usuarios
+    WHERE id = ${userId}
+      AND bearer_token = ${token}
+      AND bearer_token_expires_at > NOW()
+    LIMIT 1
+  `) as unknown as Array<{ id: string; nome: string; email: string; admin: boolean }>;
+
+  if (!rows[0]) {
+    throw new InvalidTokenError();
+  }
+
+  return rows[0];
+}
+
+export async function getProfile(tokenInput: unknown): Promise<AuthUser> {
+  const usuario = await findUserByToken(tokenInput);
+  return {
+    id: usuario.id,
+    nome: usuario.nome,
+    email: usuario.email,
+    admin: usuario.admin,
+  };
+}
+
+export async function updateProfile(
+  tokenInput: unknown,
+  nomeInput: unknown,
+  emailInput: unknown,
+): Promise<AuthUser> {
+  const usuario = await findUserByToken(tokenInput);
+  const nome = typeof nomeInput === 'string' ? nomeInput.trim() : '';
+  const email = normalizeEmail(emailInput);
+
+  if (!nome || nome.length > 120) {
+    throw new InvalidProfileError('Informe um nome com até 120 caracteres.');
+  }
+
+  const duplicate = (await sql`
+    SELECT id
+    FROM usuarios
+    WHERE email = ${email} AND id <> ${usuario.id}
+    LIMIT 1
+  `) as unknown as Array<{ id: string }>;
+
+  if (duplicate[0]) {
+    throw new InvalidProfileError('Este email ja esta cadastrado.');
+  }
+
+  const rows = (await sql`
+    UPDATE usuarios
+    SET nome = ${nome}, email = ${email}
+    WHERE id = ${usuario.id}
+    RETURNING id, nome, email, admin
+  `) as unknown as Array<{ id: string; nome: string; email: string; admin: boolean }>;
+
+  const atualizado = rows[0];
+  if (!atualizado) {
+    throw new InvalidProfileError('Nao foi possivel atualizar o perfil.');
+  }
+
+  return atualizado;
 }
 
 export async function logout(tokenInput: unknown): Promise<void> {
@@ -270,7 +360,7 @@ export async function authenticate(emailInput: unknown, senhaInput: unknown): Pr
   }
 
   const rows = (await sql`
-    SELECT id, email, senha, admin
+    SELECT id, nome, email, senha, admin
     FROM usuarios
     WHERE email = ${email}
     LIMIT 1
@@ -314,6 +404,7 @@ export async function authenticate(emailInput: unknown, senhaInput: unknown): Pr
     expiresAt,
     user: {
       id: usuario.id,
+      nome: usuario.nome,
       email: usuario.email,
       admin: usuario.admin,
     },

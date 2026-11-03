@@ -6,7 +6,7 @@ import { SidebarComponent } from './sidebar.component';
 
 class AuthServiceStub {
   logoutCalls = 0;
-  user = { id: '1', email: 'admin@exemplo.com', admin: true };
+  user = { id: '1', nome: 'Admin', email: 'admin@exemplo.com', admin: true };
 
   getUser() {
     return this.user;
@@ -54,7 +54,7 @@ describe('SidebarComponent', () => {
   it('shows authenticated user and links to settings', () => {
     const user = fixture.nativeElement.querySelector('.sidebar__user') as HTMLAnchorElement;
     expect(user.getAttribute('href')).toBe('/configuracoes');
-    expect(fixture.nativeElement.textContent).toContain('admin');
+    expect(fixture.nativeElement.textContent).toContain('Admin');
     expect(fixture.nativeElement.textContent).toContain('Administrador');
   });
 

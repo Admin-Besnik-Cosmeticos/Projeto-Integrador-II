@@ -1,10 +1,10 @@
-# Nome do Projeto   
+# Smart Beauty — Sistema de gerenciamento de estoque   
 
 Sistema de gerenciamento de estoque desenvolvido como Projeto Integrador II — UNIVESP, Turma 4, Grupo 9.
 
 ## Status do projeto
 
-- Versao atual: `0.5.0`
+- Versao atual: `0.9.0`
 - Status: Em desenvolvimento
 
 ## Tecnologias
