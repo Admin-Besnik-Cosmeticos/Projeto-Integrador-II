@@ -62,9 +62,10 @@ interface PedidoRecenteRow {
   valor_total: string | number;
 }
 
-// Limites das tabelas do dashboard (layout do Figma).
-const LIMITE_PRODUTOS_MAIS_VENDIDOS = 5;
-const LIMITE_PEDIDOS_RECENTES = 5;
+// O dashboard carrega uma janela maior para que os filtros e a ordenacao
+// tenham dados suficientes. A tabela pagina em 5 linhas para manter o layout.
+const LIMITE_PRODUTOS_MAIS_VENDIDOS = 50;
+const LIMITE_PEDIDOS_RECENTES = 50;
 // Os meses sao contados no fuso da loja, nao em UTC.
 const FUSO_HORARIO = 'America/Sao_Paulo';
 
@@ -93,10 +94,21 @@ function calcularTicketMedio(vendasTotais: number, totalPedidos: number): number
 }
 
 async function buscarResumoVendas(): Promise<ResumoVendasRow> {
+  // Somente pedidos faturaveis entram no valor vendido e no ticket medio.
+  // Cancelados, em preparo e pendentes ainda nao representam receita.
   const rows = (await sql`
+    WITH pedidos_faturaveis AS (
+      SELECT id
+      FROM pedidos
+      WHERE status IN ('Pago', 'Enviado', 'Entregue')
+    )
     SELECT
-      COALESCE((SELECT SUM(quantidade * preco_unitario) FROM itens_pedido), 0) AS vendas_totais,
-      (SELECT COUNT(*) FROM pedidos) AS total_pedidos
+      COALESCE((
+        SELECT SUM(ip.quantidade * ip.preco_unitario)
+        FROM itens_pedido ip
+        JOIN pedidos_faturaveis pf ON pf.id = ip.id_pedido
+      ), 0) AS vendas_totais,
+      (SELECT COUNT(*) FROM pedidos_faturaveis) AS total_pedidos
   `) as unknown as ResumoVendasRow[];
   return rows[0] ?? { vendas_totais: 0, total_pedidos: 0 };
 }
