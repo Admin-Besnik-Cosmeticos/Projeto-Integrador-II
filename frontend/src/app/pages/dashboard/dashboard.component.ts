@@ -105,13 +105,19 @@ export class DashboardComponent {
   }
 
   protected classeVariacao(): string {
-    const variacao = this.valor('variacao_mes_anterior');
+    const variacao = this.dados()?.variacao_mes_anterior ?? null;
+    if (variacao === null) {
+      return 'neutra';
+    }
     return variacao > 0 ? 'positiva' : variacao < 0 ? 'negativa' : 'neutra';
   }
 
   protected textoVariacao(): string {
-    const variacao = this.valor('variacao_mes_anterior');
-    return `${variacao > 0 ? '+' : ''}${variacao.toFixed(1).replace('.', ',')}%`;
+    const variacao = this.dados()?.variacao_mes_anterior ?? null;
+    if (variacao === null) {
+      return 'Sem base de comparação';
+    }
+    return `${variacao > 0 ? '+' : ''}${variacao.toFixed(1).replace('.', ',')}% em relação ao mês anterior`;
   }
 
   protected produtos(): DashboardProdutoMaisVendido[] {

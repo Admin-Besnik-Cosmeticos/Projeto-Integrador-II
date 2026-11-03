@@ -16,6 +16,7 @@ export interface PedidoRecente {
   cliente: string;
   itens: number;
   total: number;
+  status: string;
   data_pedido: string;
 }
 
@@ -56,6 +57,7 @@ interface PedidoRecenteRow {
   data_pedido: string | Date;
   id_cliente: string;
   nome_cliente: string;
+  status: string;
   quantidade_itens: string | number;
   valor_total: string | number;
 }
@@ -155,6 +157,7 @@ async function buscarPedidosRecentes(): Promise<PedidoRecente[]> {
     SELECT
       p.id,
       p.data_pedido,
+      p.status,
       c.id AS id_cliente,
       c.nome AS nome_cliente,
       COALESCE(SUM(ip.quantidade), 0) AS quantidade_itens,
@@ -162,7 +165,7 @@ async function buscarPedidosRecentes(): Promise<PedidoRecente[]> {
     FROM pedidos p
     JOIN clientes c ON c.id = p.id_cliente
     LEFT JOIN itens_pedido ip ON ip.id_pedido = p.id
-    GROUP BY p.id, p.data_pedido, c.id, c.nome
+    GROUP BY p.id, p.data_pedido, p.status, c.id, c.nome
     ORDER BY p.data_pedido DESC
     LIMIT ${LIMITE_PEDIDOS_RECENTES}
   `) as unknown as PedidoRecenteRow[];
@@ -173,6 +176,7 @@ async function buscarPedidosRecentes(): Promise<PedidoRecente[]> {
     cliente: row.nome_cliente,
     itens: paraNumero(row.quantidade_itens),
     total: paraNumero(row.valor_total),
+    status: row.status,
     data_pedido: new Date(row.data_pedido).toISOString(),
   }));
 }

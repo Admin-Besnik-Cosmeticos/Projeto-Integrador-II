@@ -48,6 +48,17 @@ describe('DashboardService', () => {
     await expect(promise).resolves.toEqual(RESPOSTA);
   });
 
+  it('preserva variacao nula retornada pela API', async () => {
+    const service = TestBed.inject(DashboardService);
+    const http = TestBed.inject(HttpTestingController);
+    const resposta = { ...RESPOSTA, variacao_mes_anterior: null };
+
+    const promise = service.obter();
+    http.expectOne('/api/dashboard').flush(resposta);
+
+    await expect(promise).resolves.toEqual(resposta);
+  });
+
   it('mapeia falha de rede', async () => {
     const service = TestBed.inject(DashboardService);
     const http = TestBed.inject(HttpTestingController);

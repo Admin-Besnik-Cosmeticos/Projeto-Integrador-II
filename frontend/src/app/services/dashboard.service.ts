@@ -1,11 +1,12 @@
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
+import type { StatusPedido } from './pedidos.service';
 
 export interface DashboardIndicadores {
   vendas_totais: number;
   pedidos_mes: number;
-  variacao_mes_anterior: number;
+  variacao_mes_anterior: number | null;
   clientes_ativos: number;
   ticket_medio: number;
 }
@@ -18,14 +19,12 @@ export interface DashboardProdutoMaisVendido {
   faturamento: number;
 }
 
-export type StatusPedido = 'Pendente' | 'Pago' | 'Enviado' | 'Entregue' | 'Cancelado';
-
 export interface DashboardPedidoRecente {
   id: string;
   cliente: string;
   itens: number;
   total: number;
-  status: StatusPedido | string;
+  status: StatusPedido;
   data_pedido: string;
 }
 
