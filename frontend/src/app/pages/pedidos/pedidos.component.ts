@@ -7,6 +7,11 @@ import {
   DropdownComponent,
   DropdownOpcao,
 } from '../../components/dropdown/dropdown.component';
+import {
+  FiltroCampo,
+  FiltroComponent,
+  FiltroValores,
+} from '../../components/filtro/filtro.component';
 import { PageHeaderComponent } from '../../components/page-header/page-header.component';
 import {
   TabelaAcao,
@@ -26,12 +31,50 @@ import { Produto, ProdutosService } from '../../services/produtos.service';
 import { ToastService } from '../../services/toast.service';
 
 interface PedidoLinha {
+  /** Codigo exibido na tabela (ex.: #A1B2C3D4). */
   id: string;
+  /** Id completo, usado na busca por codigo. */
+  idOriginal: string;
   cliente: string;
   data: string;
   itens: number;
   total: number;
-  status: string;
+  status: StatusPedido;
+}
+
+interface IndicadoresPedidos {
+  totalVendas: number;
+  pedidosMes: number;
+  ticketMedio: number;
+}
+
+const STATUS_FATURAVEIS: StatusPedido[] = ['Pago', 'Enviado', 'Entregue'];
+
+function normalizarTexto(valor: string): string {
+  return valor
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
+}
+
+function mesmoMes(data: string, referencia: Date): boolean {
+  const valor = new Date(data);
+  return (
+    !Number.isNaN(valor.getTime()) &&
+    valor.getMonth() === referencia.getMonth() &&
+    valor.getFullYear() === referencia.getFullYear()
+  );
+}
+
+function dataLocal(data: string): string {
+  const valor = new Date(data);
+  if (Number.isNaN(valor.getTime())) {
+    return '';
+  }
+  const dia = String(valor.getDate()).padStart(2, '0');
+  const mes = String(valor.getMonth() + 1).padStart(2, '0');
+  return `${valor.getFullYear()}-${mes}-${dia}`;
 }
 
 @Component({
@@ -43,6 +86,7 @@ interface PedidoLinha {
     ReactiveFormsModule,
     ErrorMessageComponent,
     DropdownComponent,
+    FiltroComponent,
     PageHeaderComponent,
   ],
   templateUrl: './pedidos.component.html',
@@ -113,16 +157,87 @@ export class PedidosComponent {
     rotulo: status,
   }));
 
+  protected readonly camposFiltro: FiltroCampo[] = [
+    {
+      id: 'codigo',
+      rotulo: 'Código do pedido',
+      tipo: 'texto',
+      placeholder: 'Ex.: #A1B2C3D4',
+    },
+    {
+      id: 'cliente',
+      rotulo: 'Cliente',
+      tipo: 'texto',
+      placeholder: 'Nome do cliente',
+    },
+    {
+      id: 'data',
+      rotulo: 'Data do pedido',
+      tipo: 'data',
+    },
+    {
+      id: 'status',
+      rotulo: 'Status',
+      tipo: 'select',
+      placeholder: 'Todos os status',
+      opcoes: this.statusOpcoes,
+    },
+  ];
+
+  // Filtros so sao aplicados apos o clique em Buscar; a listagem e carregada
+  // uma unica vez na primeira renderizacao.
+  private readonly filtrosAplicados = signal<FiltroValores>({});
+
   protected readonly linhas = computed<PedidoLinha[]>(() =>
     this.pedidosLista().map((pedido) => ({
       id: this.identificador(pedido.id),
+      idOriginal: pedido.id,
       cliente: pedido.cliente ?? this.nomeCliente(pedido.id_cliente),
       data: pedido.data_pedido,
       itens: pedido.itens.length,
       total: pedido.total,
-      status: pedido.status ?? 'Pendente',
+      status: this.statusValido(pedido.status),
     })),
   );
+
+  protected readonly linhasFiltradas = computed<PedidoLinha[]>(() => {
+    const filtros = this.filtrosAplicados();
+    const codigo = normalizarTexto(filtros['codigo'] ?? '').replace(/^#/, '');
+    const cliente = normalizarTexto(filtros['cliente'] ?? '');
+    const data = filtros['data'] ?? '';
+    const status = filtros['status'] ?? '';
+
+    return this.linhas().filter((linha) => {
+      if (codigo && !normalizarTexto(linha.idOriginal).includes(codigo)) {
+        return false;
+      }
+      if (cliente && !normalizarTexto(linha.cliente).includes(cliente)) {
+        return false;
+      }
+      if (data && dataLocal(linha.data) !== data) {
+        return false;
+      }
+      if (status && linha.status !== status) {
+        return false;
+      }
+      return true;
+    });
+  });
+
+  protected readonly indicadores = computed<IndicadoresPedidos>(() => {
+    const linhas = this.linhasFiltradas();
+    const faturaveis = linhas.filter((linha) =>
+      STATUS_FATURAVEIS.includes(linha.status),
+    );
+    const totalVendas = faturaveis.reduce((soma, linha) => soma + linha.total, 0);
+    const referencia = new Date();
+
+    return {
+      totalVendas,
+      pedidosMes: linhas.filter((linha) => mesmoMes(linha.data, referencia)).length,
+      ticketMedio: faturaveis.length > 0 ? totalVendas / faturaveis.length : 0,
+    };
+  });
 
   protected readonly tituloModal = computed(() =>
     this.editandoId() === null ? 'Novo Pedido' : 'Editar Pedido',
@@ -133,7 +248,17 @@ export class PedidosComponent {
   }
 
   constructor() {
+    // A listagem e buscada apenas na primeira renderizacao. Mudancas nos
+    // filtros nao disparam novas requisicoes: a busca roda ao clicar em Buscar.
     void this.carregar();
+  }
+
+  protected buscarFiltros(valores: FiltroValores): void {
+    this.filtrosAplicados.set(valores);
+  }
+
+  protected limparFiltros(): void {
+    this.filtrosAplicados.set({});
   }
 
   protected async carregar(): Promise<void> {

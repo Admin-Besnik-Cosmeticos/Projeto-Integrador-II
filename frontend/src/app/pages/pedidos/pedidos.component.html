@@ -16,7 +16,7 @@
       @if (carregandoListagem()) {
       <span class="indicador__esqueleto"></span>
       } @else {
-      <strong>R$ 0,00</strong>
+      <strong>{{ formatarMoeda(indicadores().totalVendas) }}</strong>
       }
     </article>
     <article class="indicador">
@@ -24,7 +24,7 @@
       @if (carregandoListagem()) {
       <span class="indicador__esqueleto"></span>
       } @else {
-      <strong>0</strong>
+      <strong>{{ indicadores().pedidosMes }}</strong>
       }
     </article>
     <article class="indicador">
@@ -32,20 +32,19 @@
       @if (carregandoListagem()) {
       <span class="indicador__esqueleto"></span>
       } @else {
-      <strong>R$ 0,00</strong>
-      }
-    </article>
-    <article class="indicador">
-      <span class="indicador__rotulo">Top produto</span>
-      @if (carregandoListagem()) {
-      <span class="indicador__esqueleto"></span>
-      } @else {
-      <strong>0</strong>
+      <strong>{{ formatarMoeda(indicadores().ticketMedio) }}</strong>
       }
     </article>
   </div>
 
-  <app-tabela [colunas]="colunas" [dados]="linhas()" [acoes]="acoes" [carregando]="carregandoListagem()"
+  <app-filtro
+    [campos]="camposFiltro"
+    [buscando]="carregandoListagem()"
+    (buscar)="buscarFiltros($event)"
+    (limpar)="limparFiltros()"
+  />
+
+  <app-tabela [colunas]="colunas" [dados]="linhasFiltradas()" [acoes]="acoes" [carregando]="carregandoListagem()"
     mensagemVazio="Nenhum pedido encontrado" descricaoVazio="Ajuste os filtros ou cadastre um novo pedido."
     (acaoSelecionada)="registrarAcao($event)" />
 

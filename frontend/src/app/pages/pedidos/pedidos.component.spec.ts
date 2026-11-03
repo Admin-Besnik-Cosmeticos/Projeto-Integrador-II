@@ -39,6 +39,23 @@ const PEDIDO = {
   total: 100,
 };
 
+const PEDIDO_ENTREGUE = {
+  ...PEDIDO,
+  id: '55555555-5555-5555-5555-555555555555',
+  status: 'Entregue' as const,
+  total: 60,
+  data_pedido: '2026-10-30T15:00:00.000Z',
+};
+
+const PEDIDO_CANCELADO = {
+  ...PEDIDO,
+  id: '66666666-6666-6666-6666-666666666666',
+  cliente: 'Bruna Costa',
+  status: 'Cancelado' as const,
+  total: 40,
+  data_pedido: '2026-10-27T15:00:00.000Z',
+};
+
 interface Vista {
   modalAberto(): boolean;
   modalVisualizacaoAberto(): boolean;
@@ -46,6 +63,16 @@ interface Vista {
   editandoId(): string | null;
   carregandoListagem(): boolean;
   form: FormGroup;
+  camposFiltro: { id: string; rotulo: string; tipo: string }[];
+  buscarFiltros(valores: Record<string, string>): void;
+  limparFiltros(): void;
+  linhasFiltradas(): Array<{
+    id: string;
+    cliente: string;
+    status: string;
+    total: number;
+  }>;
+  indicadores(): { totalVendas: number; pedidosMes: number; ticketMedio: number };
   abrirModal(): Promise<void>;
   salvarPedido(): Promise<void>;
 }
@@ -97,6 +124,7 @@ describe('PedidosComponent', () => {
 
   async function criarComponente(
     queryParams: Record<string, string> = {},
+    pedidos: unknown[] = [PEDIDO],
   ): Promise<{
     fixture: ComponentFixture<PedidosComponent>;
     vista: Vista;
@@ -110,7 +138,7 @@ describe('PedidosComponent', () => {
     const http = TestBed.inject(HttpTestingController);
     fixture.detectChanges();
 
-    http.expectOne('/api/pedidos').flush({ pedidos: [PEDIDO] });
+    http.expectOne('/api/pedidos').flush({ pedidos });
     await drenarMicrotasks();
 
     http.expectOne('/api/clientes').flush({ clientes: [CLIENTE] });
@@ -181,5 +209,88 @@ describe('PedidosComponent', () => {
 
     expect(vista.modalAberto()).toBe(false);
     expect(toasts()[0].tipo).toBe('sucesso');
+  });
+
+  it('configura os filtros de codigo, cliente, data e status', async () => {
+    const { vista } = await criarComponente();
+
+    expect(vista.camposFiltro.map((campo) => campo.id)).toEqual([
+      'codigo',
+      'cliente',
+      'data',
+      'status',
+    ]);
+  });
+
+  it('so aplica o filtro ao clicar em buscar, sem refazer a requisicao', async () => {
+    const { fixture, vista, http } = await criarComponente({}, [
+      PEDIDO,
+      PEDIDO_ENTREGUE,
+      PEDIDO_CANCELADO,
+    ]);
+
+    expect(vista.linhasFiltradas()).toHaveLength(3);
+
+    vista.buscarFiltros({ status: 'Pago' });
+    fixture.detectChanges();
+
+    expect(vista.linhasFiltradas().map((linha) => linha.status)).toEqual(['Pago']);
+    http.expectNone('/api/pedidos');
+  });
+
+  it('filtra por codigo, cliente, data e status', async () => {
+    const { vista } = await criarComponente({}, [
+      PEDIDO,
+      PEDIDO_ENTREGUE,
+      PEDIDO_CANCELADO,
+    ]);
+
+    vista.buscarFiltros({ codigo: '5555' });
+    expect(vista.linhasFiltradas().map((linha) => linha.status)).toEqual(['Entregue']);
+
+    vista.buscarFiltros({ cliente: 'bruna' });
+    expect(vista.linhasFiltradas().map((linha) => linha.status)).toEqual(['Cancelado']);
+
+    vista.buscarFiltros({ data: '2026-10-30' });
+    expect(vista.linhasFiltradas().map((linha) => linha.status)).toEqual(['Entregue']);
+
+    vista.buscarFiltros({ status: 'Pago' });
+    expect(vista.linhasFiltradas().map((linha) => linha.status)).toEqual(['Pago']);
+  });
+
+  it('volta a exibir todos os pedidos ao limpar os filtros', async () => {
+    const { vista } = await criarComponente({}, [PEDIDO, PEDIDO_CANCELADO]);
+
+    vista.buscarFiltros({ status: 'Cancelado' });
+    expect(vista.linhasFiltradas()).toHaveLength(1);
+
+    vista.limparFiltros();
+    expect(vista.linhasFiltradas()).toHaveLength(2);
+  });
+
+  it('calcula total de vendas, pedidos do mes e ticket medio', async () => {
+    const agora = new Date();
+    const dataAtual = new Date(agora.getFullYear(), agora.getMonth(), 10, 12).toISOString();
+    const dataAnterior = new Date(agora.getFullYear(), agora.getMonth() - 1, 10, 12).toISOString();
+
+    const { fixture, vista } = await criarComponente({}, [
+      { ...PEDIDO, data_pedido: dataAtual, status: 'Pago', total: 100 },
+      { ...PEDIDO_ENTREGUE, data_pedido: dataAtual, total: 60 },
+      { ...PEDIDO_CANCELADO, data_pedido: dataAtual, total: 40 },
+      { ...PEDIDO, id: '77777777-7777-7777-7777-777777777777', data_pedido: dataAnterior, status: 'Pendente', total: 20 },
+    ]);
+
+    expect(vista.indicadores()).toEqual({
+      totalVendas: 160,
+      pedidosMes: 3,
+      ticketMedio: 80,
+    });
+
+    const texto = ((fixture.nativeElement as HTMLElement).textContent ?? '').replace(
+      /\u00a0/g,
+      ' ',
+    );
+    expect(texto).toContain('R$ 160,00');
+    expect(texto).toContain('R$ 80,00');
   });
 });
