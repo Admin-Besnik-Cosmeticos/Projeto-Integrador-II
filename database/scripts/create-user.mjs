@@ -8,8 +8,8 @@ const here = dirname(fileURLToPath(import.meta.url));
 const root = join(here, '..', '..');
 
 function usage() {
-  console.log("Uso: npm run db:create-user -- --email usuario@example.com --senha 'senha-forte' [--admin true|false]");
-  console.log("Para producao, use: npm run db:create-user:prod -- --email usuario@example.com --senha 'senha-forte' [--admin true|false]");
+  console.log("Uso: npm run db:create-user -- --nome 'Nome' --email usuario@example.com --senha 'senha-forte' [--admin true|false]");
+  console.log("Para producao, use: npm run db:create-user:prod -- --nome 'Nome' --email usuario@example.com --senha 'senha-forte' [--admin true|false]");
 }
 
 function parseArgs(argv) {
@@ -42,12 +42,19 @@ if (args.has('help')) {
 }
 
 const email = args.get('email')?.trim().toLowerCase();
+const nome = args.get('nome')?.trim();
 const senha = args.get('senha');
 const adminRaw = args.get('admin') ?? 'false';
 const admin = adminRaw === 'true' || adminRaw === '1' || adminRaw === 'yes';
 
 if (!email || !email.includes('@')) {
   console.error('Informe um email válido com --email.');
+  usage();
+  process.exit(1);
+}
+
+if (!nome || nome.length > 120) {
+  console.error('Informe um nome com até 120 caracteres com --nome.');
   usage();
   process.exit(1);
 }
@@ -81,13 +88,13 @@ const pool = new Pool({ connectionString: databaseUrl });
 
 try {
   const result = await pool.query(
-    `INSERT INTO usuarios (email, senha, admin)
-     VALUES ($1, $2, $3)
-     RETURNING id, email, admin`,
-    [email, senhaHash, admin]
+    `INSERT INTO usuarios (nome, email, senha, admin)
+     VALUES ($1, $2, $3, $4)
+     RETURNING id, nome, email, admin`,
+    [nome, email, senhaHash, admin]
   );
   const user = result.rows[0];
-  console.log(`Usuario criado: ${user.id} ${user.email} admin=${user.admin}`);
+  console.log(`Usuario criado: ${user.id} ${user.nome} ${user.email} admin=${user.admin}`);
 } catch (error) {
   if (error && typeof error === 'object' && 'code' in error && error.code === '23505') {
     console.error('Ja existe um usuario com esse email.');
