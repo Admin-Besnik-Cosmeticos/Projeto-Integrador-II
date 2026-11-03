@@ -140,12 +140,23 @@ Com o limite gratuito de 12 funções, o projeto comporta até 48 operações.
 
 - `POST /api/auth/login`: autentica usuário com e-mail e senha.
 - `DELETE /api/auth/login`: encerra a sessão do usuário.
+- `GET /api/auth/perfil`: retorna o perfil do usuário autenticado.
+- `PUT /api/auth/perfil`: atualiza nome/e-mail do usuário autenticado.
 - `POST /api/auth/recuperacao`: solicita chave de recuperação/alteração de senha.
 - `PUT /api/auth/recuperacao`: redefine a senha com chave válida.
+- `GET /api/dashboard`: retorna indicadores, produtos mais vendidos e pedidos recentes.
 - `GET /api/produtos`: lista os produtos (ou busca um com `?id=`).
 - `POST /api/produtos`: cadastra produto (`nome`, `preco`, `quantidade_estoque`).
 - `PUT /api/produtos?id=`: atualiza produto.
 - `DELETE /api/produtos?id=`: remove produto (`409` se estiver vinculado a pedidos).
+- `GET /api/clientes`: lista clientes (ou busca um com `?id=`).
+- `POST /api/clientes`: cadastra cliente (`nome`, `telefone`, `endereco`).
+- `PUT /api/clientes?id=`: atualiza cliente.
+- `DELETE /api/clientes?id=`: remove cliente (`409` se possuir pedidos vinculados).
+- `GET /api/pedidos`: lista pedidos (ou busca um com `?id=`).
+- `POST /api/pedidos`: cadastra pedido (`id_cliente`, `status`, `itens`).
+- `PUT /api/pedidos?id=`: atualiza pedido.
+- `DELETE /api/pedidos?id=`: remove pedido.
 
 No painel da Vercel, configure o projeto com:
 

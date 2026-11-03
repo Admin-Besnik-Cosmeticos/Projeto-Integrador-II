@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { getDashboard } from '../../services/dashboard.service.js';
+import { getDashboard, normalizarPeriodo } from '../../services/dashboard.service.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
@@ -8,7 +8,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(405).json({ erro: 'Metodo nao permitido' });
     }
 
-    const dashboard = await getDashboard();
+    const periodo = req.query?.periodo;
+    const dashboard = await getDashboard(normalizarPeriodo(periodo));
     return res.status(200).json(dashboard);
   } catch (err) {
     console.error('[api/dashboard] erro:', err);

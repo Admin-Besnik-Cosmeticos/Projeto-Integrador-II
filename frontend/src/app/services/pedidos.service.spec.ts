@@ -35,4 +35,49 @@ describe('PedidosService', () => {
     request.flush({ pedido: { id: 'pedido-1', ...dados, data_pedido: '', itens: [], total: 0 } });
     await expect(promise).resolves.toMatchObject({ id: 'pedido-1' });
   });
+
+  it('envia e retorna o status do pedido', async () => {
+    const service = TestBed.inject(PedidosService);
+    const http = TestBed.inject(HttpTestingController);
+    const dados = {
+      id_cliente: 'cliente-1',
+      status: 'Pago' as const,
+      itens: [{ id_produto: 'produto-1', quantidade: 2 }],
+    };
+
+    const promise = service.cadastrar(dados);
+    const request = http.expectOne('/api/pedidos');
+
+    expect(request.request.body.status).toBe('Pago');
+    request.flush(
+      {
+        pedido: {
+          id: 'pedido-1',
+          ...dados,
+          status: 'Pago',
+          data_pedido: '',
+          itens: [],
+          total: 0,
+        },
+      },
+      { status: 201, statusText: 'Created' },
+    );
+
+    await expect(promise).resolves.toMatchObject({ id: 'pedido-1', status: 'Pago' });
+  });
+
+  it('mapeia erro 400 com mensagem da API', async () => {
+    const service = TestBed.inject(PedidosService);
+    const http = TestBed.inject(HttpTestingController);
+    const dados = { id_cliente: 'cliente-1', itens: [{ id_produto: 'produto-1', quantidade: 0 }] };
+
+    const promise = service.cadastrar(dados);
+    const request = http.expectOne('/api/pedidos');
+    request.flush(
+      { erro: 'Item 1: quantidade deve ser maior que 0.' },
+      { status: 400, statusText: 'Bad Request' },
+    );
+
+    await expect(promise).rejects.toMatchObject({ code: 'invalid_data' });
+  });
 });

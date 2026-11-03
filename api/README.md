@@ -81,6 +81,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
    (nunca vaze stack trace para o cliente).
 4. **Nova rota = nova pasta** `api/<recurso>/index.ts` + funções no service correspondente.
 
+## Autenticação
+
+- `POST /api/auth/login` e `DELETE /api/auth/login` criam/encerram a sessão.
+- `GET/PUT /api/auth/perfil` e `POST/PUT /api/auth/recuperacao` (tipo `alteracao`)
+  exigem `Authorization: Bearer <token>`.
+- `GET /api/dashboard`, `GET/POST/PUT/DELETE /api/produtos`,
+  `GET/POST/PUT/DELETE /api/clientes` e `GET/POST/PUT/DELETE /api/pedidos`
+  permanecem **públicas nesta versão**, pois o acesso é restrito no frontend pelo
+  `authGuard`. Antes de expor a API fora da aplicação, essas rotas devem validar
+  o token com o mesmo helper de `/api/auth/perfil`.
+
 ## Rodando local
 
 ```bash

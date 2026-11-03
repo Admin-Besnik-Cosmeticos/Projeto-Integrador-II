@@ -9,11 +9,23 @@ export interface ItemPedido {
   preco_unitario: number;
 }
 
+export const STATUS_PEDIDO = [
+  'Pendente',
+  'Em Preparo',
+  'Pago',
+  'Enviado',
+  'Entregue',
+  'Cancelado',
+] as const;
+
+export type StatusPedido = (typeof STATUS_PEDIDO)[number];
+
 export interface Pedido {
   id: string;
   id_cliente: string;
   cliente: string;
   data_pedido: string;
+  status: StatusPedido;
   itens: ItemPedido[];
   total: number;
 }
@@ -30,6 +42,8 @@ export interface PedidoInput {
   id_cliente: string;
   // Opcional: no cadastro assume a data atual; na atualizacao mantem a atual.
   data_pedido?: string;
+  // Opcional: no cadastro assume "Pendente"; na atualizacao mantem o atual.
+  status?: string;
   itens: ItemPedidoInput[];
 }
 
@@ -38,6 +52,7 @@ interface PedidoRow {
   id_cliente: string;
   cliente: string;
   data_pedido: Date | string;
+  status: StatusPedido;
 }
 
 interface ItemPedidoRow {
@@ -58,6 +73,7 @@ interface ItemNormalizado {
 interface PedidoNormalizado {
   id_cliente: string;
   data_pedido: string | null;
+  status: StatusPedido | null;
   itens: ItemNormalizado[];
 }
 
@@ -116,6 +132,24 @@ function normalizarDataPedido(dataInput: unknown): string | null {
     throw new PedidoInvalidoError('Data do pedido invalida.');
   }
   return data.toISOString();
+}
+
+function normalizarStatus(statusInput: unknown): StatusPedido | null {
+  if (statusInput === undefined || statusInput === null || statusInput === '') {
+    return null;
+  }
+  if (typeof statusInput !== 'string') {
+    throw new PedidoInvalidoError('Status do pedido invalido.');
+  }
+  const status = STATUS_PEDIDO.find(
+    (valor) => valor.toLowerCase() === statusInput.trim().toLowerCase(),
+  );
+  if (!status) {
+    throw new PedidoInvalidoError(
+      `Status do pedido deve ser um de: ${STATUS_PEDIDO.join(', ')}.`,
+    );
+  }
+  return status;
 }
 
 function normalizarQuantidade(quantidadeInput: unknown, posicao: number): number {
@@ -208,6 +242,7 @@ function normalizarPedido(input: unknown): PedidoNormalizado {
   return {
     id_cliente: normalizarUuid(body.id_cliente, 'Id de cliente invalido.'),
     data_pedido: normalizarDataPedido(body.data_pedido),
+    status: normalizarStatus(body.status),
     itens: normalizarItens(body.itens),
   };
 }
@@ -279,6 +314,7 @@ function montarPedidos(pedidoRows: PedidoRow[], itemRows: ItemPedidoRow[]): Pedi
       id_cliente: row.id_cliente,
       cliente: row.cliente,
       data_pedido: paraDataIso(row.data_pedido),
+      status: row.status,
       itens,
       total: totalCentavos / 100,
     };
@@ -294,7 +330,7 @@ function tratarFkViolada(err: unknown): never {
 
 export async function listPedidos(): Promise<Pedido[]> {
   const pedidoRows = (await sql`
-    SELECT p.id, p.id_cliente, c.nome AS cliente, p.data_pedido
+    SELECT p.id, p.id_cliente, c.nome AS cliente, p.data_pedido, p.status
     FROM pedidos p
     JOIN clientes c ON c.id = p.id_cliente
     ORDER BY p.data_pedido DESC, p.id
@@ -320,7 +356,7 @@ export async function getPedidoById(idInput: unknown): Promise<Pedido> {
 
   const [pedidoRows, itemRows] = (await sql.transaction([
     sql`
-      SELECT p.id, p.id_cliente, c.nome AS cliente, p.data_pedido
+      SELECT p.id, p.id_cliente, c.nome AS cliente, p.data_pedido, p.status
       FROM pedidos p
       JOIN clientes c ON c.id = p.id_cliente
       WHERE p.id = ${id}
@@ -351,13 +387,14 @@ export async function createPedido(input: unknown): Promise<Pedido> {
 
   const id = randomUUID();
   const dataPedido = dados.data_pedido ?? new Date().toISOString();
+  const status = dados.status ?? 'Pendente';
 
   try {
     // Pedido e itens gravados na mesma transacao: ou tudo ou nada.
     await sql.transaction([
       sql`
-        INSERT INTO pedidos (id, id_cliente, data_pedido)
-        VALUES (${id}, ${dados.id_cliente}, ${dataPedido})
+        INSERT INTO pedidos (id, id_cliente, data_pedido, status)
+        VALUES (${id}, ${dados.id_cliente}, ${dataPedido}, ${status})
       `,
       sql`
         INSERT INTO itens_pedido (id_pedido, id_produto, quantidade, preco_unitario)
@@ -404,7 +441,8 @@ export async function updatePedido(idInput: unknown, input: unknown): Promise<Pe
       sql`
         UPDATE pedidos
         SET id_cliente = ${dados.id_cliente},
-            data_pedido = COALESCE(${dados.data_pedido}::timestamptz, data_pedido)
+            data_pedido = COALESCE(${dados.data_pedido}::timestamptz, data_pedido),
+            status = COALESCE(${dados.status}::varchar, status)
         WHERE id = ${id}
         RETURNING id
       `,

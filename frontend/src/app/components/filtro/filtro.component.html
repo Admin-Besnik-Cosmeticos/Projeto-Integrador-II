@@ -1,0 +1,51 @@
+<form #formulario class="filtro" (submit)="enviar($event)" novalidate>
+  <div class="filtro__campos">
+    @for (campo of campos(); track campo.id) {
+      <label class="filtro__campo" [attr.for]="'filtro-' + campo.id">
+        <span class="filtro__rotulo">{{ campo.rotulo }}</span>
+
+        @switch (campo.tipo) {
+          @case ('select') {
+            <select
+              [id]="'filtro-' + campo.id"
+              [value]="valor(campo.id)"
+              (change)="atualizar(campo.id, $event)"
+            >
+              <option value="">{{ campo.placeholder ?? 'Todos' }}</option>
+              @for (opcao of campo.opcoes ?? []; track opcao.valor) {
+                <option [value]="opcao.valor">{{ opcao.rotulo }}</option>
+              }
+            </select>
+          }
+          @case ('data') {
+            <input
+              [id]="'filtro-' + campo.id"
+              type="date"
+              [value]="valor(campo.id)"
+              (input)="atualizar(campo.id, $event)"
+            />
+          }
+          @default {
+            <input
+              [id]="'filtro-' + campo.id"
+              type="search"
+              autocomplete="off"
+              [placeholder]="campo.placeholder ?? ''"
+              [value]="valor(campo.id)"
+              (input)="atualizar(campo.id, $event)"
+            />
+          }
+        }
+      </label>
+    }
+  </div>
+
+  <div class="filtro__acoes">
+    <button class="filtro__limpar" type="button" (click)="limparCampos()">
+      Limpar
+    </button>
+    <button class="filtro__buscar" type="submit" [disabled]="buscando()">
+      {{ buscando() ? 'Buscando...' : rotuloBuscar() }}
+    </button>
+  </div>
+</form>

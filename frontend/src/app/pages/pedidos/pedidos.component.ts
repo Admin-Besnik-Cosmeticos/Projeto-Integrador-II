@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ModalAcoesDirective, ModalComponent } from '../../components/modal/modal.component';
 import { ErrorMessageComponent } from '../../components/error-message/error-message.component';
@@ -7,6 +7,11 @@ import {
   DropdownComponent,
   DropdownOpcao,
 } from '../../components/dropdown/dropdown.component';
+import {
+  FiltroCampo,
+  FiltroComponent,
+  FiltroValores,
+} from '../../components/filtro/filtro.component';
 import { PageHeaderComponent } from '../../components/page-header/page-header.component';
 import {
   TabelaAcao,
@@ -19,17 +24,166 @@ import {
   Pedido,
   PedidosError,
   PedidosService,
+  STATUS_PEDIDO,
+  StatusPedido,
 } from '../../services/pedidos.service';
 import { Produto, ProdutosService } from '../../services/produtos.service';
 import { ToastService } from '../../services/toast.service';
+import { normalizarTexto } from '../../utils/texto';
 
 interface PedidoLinha {
+  /** Codigo exibido na tabela (ex.: #A1B2C3D4). */
   id: string;
+  /** Id completo, usado na busca por codigo. */
+  idOriginal: string;
   cliente: string;
   data: string;
   itens: number;
   total: number;
-  status: string;
+  status: StatusPedido;
+}
+
+interface IndicadoresPedidos {
+  faturamento: number;
+  totalPedidos: number;
+  ticketMedio: number;
+}
+
+interface Periodo {
+  inicio: string;
+  fim: string;
+}
+
+const STATUS_FATURAVEIS: StatusPedido[] = ['Pago', 'Enviado', 'Entregue'];
+
+const MESES = [
+  'janeiro',
+  'fevereiro',
+  'marco',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
+] as const;
+
+function formatarDataInput(data: Date): string {
+  const ano = data.getFullYear();
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const dia = String(data.getDate()).padStart(2, '0');
+  return `${ano}-${mes}-${dia}`;
+}
+
+function ultimoDiaDoMes(data: Date): number {
+  return new Date(data.getFullYear(), data.getMonth() + 1, 0).getDate();
+}
+
+function trimestreAtual(referencia = new Date()): Periodo {
+  const primeiroMes = Math.floor(referencia.getMonth() / 3) * 3;
+  return {
+    inicio: formatarDataInput(new Date(referencia.getFullYear(), primeiroMes, 1)),
+    fim: formatarDataInput(new Date(referencia.getFullYear(), primeiroMes + 3, 0)),
+  };
+}
+
+function dataLocal(data: string): string {
+  const valor = new Date(data);
+  return Number.isNaN(valor.getTime()) ? '' : formatarDataInput(valor);
+}
+
+function dentroDoPeriodo(data: string, inicio: string, fim: string): boolean {
+  const dia = dataLocal(data);
+  if (!dia) {
+    return false;
+  }
+  if (inicio && dia < inicio) {
+    return false;
+  }
+  if (fim && dia > fim) {
+    return false;
+  }
+  return true;
+}
+
+function formatarDataCurta(data: Date): string {
+  const dia = String(data.getDate()).padStart(2, '0');
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  return `${dia}/${mes}/${data.getFullYear()}`;
+}
+
+function mesmoDia(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function descreverPeriodo(
+  inicio: string,
+  fim: string,
+  referencia = new Date(),
+): string {
+  if (!inicio && !fim) {
+    return 'Valores de todos os pedidos.';
+  }
+
+  const dataInicio = inicio ? new Date(`${inicio}T00:00:00`) : null;
+  const dataFim = fim ? new Date(`${fim}T00:00:00`) : null;
+
+  if (!dataInicio) {
+    return `Valores até ${formatarDataCurta(dataFim as Date)}.`;
+  }
+
+  if (!dataFim) {
+    return `Valores a partir de ${formatarDataCurta(dataInicio)}.`;
+  }
+
+  const mesInteiro =
+    dataInicio.getFullYear() === dataFim.getFullYear() &&
+    dataInicio.getMonth() === dataFim.getMonth() &&
+    dataInicio.getDate() === 1 &&
+    dataFim.getDate() === ultimoDiaDoMes(dataFim);
+
+  if (mesInteiro) {
+    const mes = MESES[dataInicio.getMonth()];
+    const mesAtual =
+      dataInicio.getFullYear() === referencia.getFullYear() &&
+      dataInicio.getMonth() === referencia.getMonth();
+    return mesAtual
+      ? `Valores do mês atual (${mes} de ${dataInicio.getFullYear()}).`
+      : `Valores de ${mes} de ${dataInicio.getFullYear()}.`;
+  }
+
+  const primeiroMesTrimestre = Math.floor(dataInicio.getMonth() / 3) * 3;
+  const inicioTrimestre = new Date(
+    dataInicio.getFullYear(),
+    primeiroMesTrimestre,
+    1,
+  );
+  const fimTrimestre = new Date(
+    dataInicio.getFullYear(),
+    primeiroMesTrimestre + 3,
+    0,
+  );
+  const trimestreInteiro =
+    mesmoDia(dataInicio, inicioTrimestre) && mesmoDia(dataFim, fimTrimestre);
+
+  if (trimestreInteiro) {
+    const trimestre = Math.floor(dataInicio.getMonth() / 3) + 1;
+    const trimestreAtual =
+      trimestre === Math.floor(referencia.getMonth() / 3) + 1 &&
+      dataInicio.getFullYear() === referencia.getFullYear();
+    return trimestreAtual
+      ? `Valores do trimestre atual (${formatarDataCurta(dataInicio)} a ${formatarDataCurta(dataFim)}).`
+      : `Valores do ${trimestre}º trimestre de ${dataInicio.getFullYear()}.`;
+  }
+
+  return `Valores de ${formatarDataCurta(dataInicio)} a ${formatarDataCurta(dataFim)}.`;
 }
 
 @Component({
@@ -41,6 +195,7 @@ interface PedidoLinha {
     ReactiveFormsModule,
     ErrorMessageComponent,
     DropdownComponent,
+    FiltroComponent,
     PageHeaderComponent,
   ],
   templateUrl: './pedidos.component.html',
@@ -49,6 +204,7 @@ interface PedidoLinha {
 export class PedidosComponent {
   private readonly fb = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly pedidosService = inject(PedidosService);
   private readonly clientesService = inject(ClientesService);
   private readonly produtosService = inject(ProdutosService);
@@ -101,19 +257,113 @@ export class PedidosComponent {
 
   protected readonly form = this.fb.nonNullable.group({
     idCliente: ['', Validators.required],
+    status: ['Pendente' as StatusPedido, Validators.required],
     itens: this.fb.array([this.criarItem()]),
+  });
+
+  protected readonly statusOpcoes: DropdownOpcao[] = STATUS_PEDIDO.map((status) => ({
+    valor: status,
+    rotulo: status,
+  }));
+
+  private readonly periodoInicial = trimestreAtual();
+
+  protected readonly camposFiltro: FiltroCampo[] = [
+    {
+      id: 'codigo',
+      rotulo: 'Código do pedido',
+      tipo: 'texto',
+      placeholder: 'Ex.: #A1B2C3D4',
+    },
+    {
+      id: 'cliente',
+      rotulo: 'Cliente',
+      tipo: 'texto',
+      placeholder: 'Nome do cliente',
+    },
+    {
+      id: 'dataInicial',
+      rotulo: 'Data inicial',
+      tipo: 'data',
+      valorInicial: this.periodoInicial.inicio,
+    },
+    {
+      id: 'dataFinal',
+      rotulo: 'Data final',
+      tipo: 'data',
+      valorInicial: this.periodoInicial.fim,
+    },
+    {
+      id: 'status',
+      rotulo: 'Status',
+      tipo: 'select',
+      placeholder: 'Todos os status',
+      opcoes: this.statusOpcoes,
+    },
+  ];
+
+  // Filtros so sao aplicados apos o clique em Buscar; a listagem e carregada
+  // uma unica vez na primeira renderizacao. O periodo padrao e o trimestre atual.
+  private readonly filtrosAplicados = signal<FiltroValores>({
+    dataInicial: this.periodoInicial.inicio,
+    dataFinal: this.periodoInicial.fim,
   });
 
   protected readonly linhas = computed<PedidoLinha[]>(() =>
     this.pedidosLista().map((pedido) => ({
       id: this.identificador(pedido.id),
+      idOriginal: pedido.id,
       cliente: pedido.cliente ?? this.nomeCliente(pedido.id_cliente),
       data: pedido.data_pedido,
       itens: pedido.itens.length,
       total: pedido.total,
-      status: pedido.status ?? 'Pendente',
+      status: this.statusValido(pedido.status),
     })),
   );
+
+  protected readonly linhasFiltradas = computed<PedidoLinha[]>(() => {
+    const filtros = this.filtrosAplicados();
+    const codigo = normalizarTexto(filtros['codigo'] ?? '').replace(/^#/, '');
+    const cliente = normalizarTexto(filtros['cliente'] ?? '');
+    const dataInicial = filtros['dataInicial'] ?? '';
+    const dataFinal = filtros['dataFinal'] ?? '';
+    const status = filtros['status'] ?? '';
+
+    return this.linhas().filter((linha) => {
+      if (codigo && !normalizarTexto(linha.idOriginal).includes(codigo)) {
+        return false;
+      }
+      if (cliente && !normalizarTexto(linha.cliente).includes(cliente)) {
+        return false;
+      }
+      if (!dentroDoPeriodo(linha.data, dataInicial, dataFinal)) {
+        return false;
+      }
+      if (status && linha.status !== status) {
+        return false;
+      }
+      return true;
+    });
+  });
+
+  protected readonly descricaoPeriodo = computed(() => {
+    const filtros = this.filtrosAplicados();
+    return descreverPeriodo(filtros['dataInicial'] ?? '', filtros['dataFinal'] ?? '');
+  });
+
+  protected readonly indicadores = computed<IndicadoresPedidos>(() => {
+    const linhas = this.linhasFiltradas();
+    const faturaveis = linhas.filter((linha) =>
+      STATUS_FATURAVEIS.includes(linha.status),
+    );
+    const faturamento = faturaveis.reduce((soma, linha) => soma + linha.total, 0);
+
+    return {
+      faturamento,
+      totalPedidos: linhas.length,
+      ticketMedio: faturaveis.length > 0 ? faturamento / faturaveis.length : 0,
+    };
+  });
 
   protected readonly tituloModal = computed(() =>
     this.editandoId() === null ? 'Novo Pedido' : 'Editar Pedido',
@@ -124,7 +374,17 @@ export class PedidosComponent {
   }
 
   constructor() {
+    // A listagem e buscada apenas na primeira renderizacao. Mudancas nos
+    // filtros nao disparam novas requisicoes: a busca roda ao clicar em Buscar.
     void this.carregar();
+  }
+
+  protected buscarFiltros(valores: FiltroValores): void {
+    this.filtrosAplicados.set(valores);
+  }
+
+  protected limparFiltros(): void {
+    this.filtrosAplicados.set({});
   }
 
   protected async carregar(): Promise<void> {
@@ -145,19 +405,48 @@ export class PedidosComponent {
 
     this.carregandoListagem.set(false);
 
-    if (this.route.snapshot.queryParamMap.get('novo') === 'true') {
-      await this.abrirModal();
+    const params = this.route.snapshot.queryParamMap;
+    const novo = params.get('novo') === 'true';
+    const clienteId = params.get('cliente');
+    const editarId = params.get('editar');
+    const visualizarId = params.get('visualizar');
+
+    if (novo) {
+      await this.abrirModal(clienteId ?? undefined);
+    } else if (editarId) {
+      const pedido = this.pedidosLista().find((item) => item.id === editarId);
+      if (pedido) {
+        await this.editar(pedido);
+      }
+    } else if (visualizarId) {
+      const pedido = this.pedidosLista().find((item) => item.id === visualizarId);
+      if (pedido) {
+        this.pedidoSelecionado.set(pedido);
+        this.modalVisualizacaoAberto.set(true);
+      }
+    }
+
+    if (
+      novo ||
+      clienteId !== null ||
+      editarId !== null ||
+      visualizarId !== null
+    ) {
+      await this.limparQueryParams();
     }
   }
 
-  protected async abrirModal(): Promise<void> {
+  protected async abrirModal(clienteId?: string): Promise<void> {
     this.editandoId.set(null);
-    this.form.reset({ idCliente: '' });
+    this.form.reset({ idCliente: '', status: 'Pendente' });
     this.limparItens();
     this.modalAberto.set(true);
 
     try {
       await this.carregarOpcoes();
+      if (clienteId) {
+        this.form.controls.idCliente.setValue(clienteId);
+      }
     } catch (error) {
       this.toast.erro(this.mensagemDeErro(error));
     }
@@ -284,6 +573,7 @@ export class PedidosComponent {
     const valores = this.form.getRawValue();
     const dados = {
       id_cliente: valores.idCliente,
+      status: valores.status,
       itens: valores.itens.map((item) => ({
         id_produto: item.idProduto,
         quantidade: Number(item.quantidade),
@@ -368,14 +658,38 @@ export class PedidosComponent {
     await this.carregarOpcoes();
     this.editandoId.set(pedido.id);
     this.form.controls.idCliente.setValue(pedido.id_cliente);
-    this.limparItens();
-    pedido.itens.forEach((item) =>
+    this.form.controls.status.setValue(this.statusValido(pedido.status));
+    this.definirItens(pedido.itens);
+    this.modalAberto.set(true);
+  }
+
+  private definirItens(itens: Pedido['itens']): void {
+    while (this.itens.length > 0) {
+      this.itens.removeAt(0);
+    }
+    itens.forEach((item) =>
       this.itens.push(this.fb.nonNullable.group({
         idProduto: [item.id_produto, Validators.required],
         quantidade: [String(item.quantidade), [Validators.required, Validators.pattern(/^[1-9]\d*$/)]],
       })),
     );
-    this.modalAberto.set(true);
+    if (this.itens.length === 0) {
+      this.itens.push(this.criarItem());
+    }
+  }
+
+  private statusValido(status?: string): StatusPedido {
+    return STATUS_PEDIDO.includes(status as StatusPedido)
+      ? (status as StatusPedido)
+      : 'Pendente';
+  }
+
+  private async limparQueryParams(): Promise<void> {
+    await this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {},
+      replaceUrl: true,
+    });
   }
 
   private criarItem() {

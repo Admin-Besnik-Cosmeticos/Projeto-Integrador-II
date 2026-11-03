@@ -40,7 +40,7 @@ describe('DashboardService', () => {
     const http = TestBed.inject(HttpTestingController);
 
     const promise = service.obter();
-    const request = http.expectOne('/api/dashboard');
+    const request = http.expectOne('/api/dashboard?periodo=total');
 
     expect(request.request.method).toBe('GET');
     request.flush(RESPOSTA);
@@ -48,12 +48,34 @@ describe('DashboardService', () => {
     await expect(promise).resolves.toEqual(RESPOSTA);
   });
 
+  it('envia o periodo selecionado como parametro', async () => {
+    const service = TestBed.inject(DashboardService);
+    const http = TestBed.inject(HttpTestingController);
+
+    const promise = service.obter('trimestre');
+    const request = http.expectOne('/api/dashboard?periodo=trimestre');
+
+    request.flush(RESPOSTA);
+    await expect(promise).resolves.toEqual(RESPOSTA);
+  });
+
+  it('preserva variacao nula retornada pela API', async () => {
+    const service = TestBed.inject(DashboardService);
+    const http = TestBed.inject(HttpTestingController);
+    const resposta = { ...RESPOSTA, variacao_mes_anterior: null };
+
+    const promise = service.obter();
+    http.expectOne('/api/dashboard?periodo=total').flush(resposta);
+
+    await expect(promise).resolves.toEqual(resposta);
+  });
+
   it('mapeia falha de rede', async () => {
     const service = TestBed.inject(DashboardService);
     const http = TestBed.inject(HttpTestingController);
 
     const promise = service.obter();
-    const request = http.expectOne('/api/dashboard');
+    const request = http.expectOne('/api/dashboard?periodo=total');
     request.error(new ProgressEvent('error'), { status: 0 });
 
     await expect(promise).rejects.toMatchObject({ code: 'network_error' });

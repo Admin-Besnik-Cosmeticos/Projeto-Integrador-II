@@ -17,37 +17,6 @@
   cursor: pointer;
 }
 
-.produtos__busca {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  max-width: 22rem;
-  margin: 0 0 1rem;
-  padding: 0.5rem 0.9rem;
-  border: 1px solid #eebee2;
-  border-radius: 999px;
-  background: #fcf3fb;
-  color: #a24dad;
-}
-
-.produtos__busca:focus-within {
-  border-color: #a24dad;
-  background: #fff;
-}
-
-.produtos__busca-entrada {
-  width: 100%;
-  border: 0;
-  background: transparent;
-  color: #4f2558;
-  font: inherit;
-  font-size: 0.9rem;
-}
-
-.produtos__busca-entrada::placeholder {
-  color: #baa9c0;
-}
-
 .produtos__tentar:focus-visible,
 .formulario-produto__acao:focus-visible {
   outline: 2px solid #a24dad;
@@ -192,10 +161,6 @@
 }
 
 @media (max-width: 640px) {
-  .produtos__busca {
-    max-width: 100%;
-  }
-
   .formulario-produto__linha {
     grid-template-columns: 1fr;
   }
