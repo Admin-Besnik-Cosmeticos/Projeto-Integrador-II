@@ -1,5 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormArray, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ModalAcoesDirective, ModalComponent } from '../../components/modal/modal.component';
 import { ErrorMessageComponent } from '../../components/error-message/error-message.component';
@@ -19,6 +19,8 @@ import {
   Pedido,
   PedidosError,
   PedidosService,
+  STATUS_PEDIDO,
+  StatusPedido,
 } from '../../services/pedidos.service';
 import { Produto, ProdutosService } from '../../services/produtos.service';
 import { ToastService } from '../../services/toast.service';
@@ -49,6 +51,7 @@ interface PedidoLinha {
 export class PedidosComponent {
   private readonly fb = inject(FormBuilder);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly pedidosService = inject(PedidosService);
   private readonly clientesService = inject(ClientesService);
   private readonly produtosService = inject(ProdutosService);
@@ -101,8 +104,14 @@ export class PedidosComponent {
 
   protected readonly form = this.fb.nonNullable.group({
     idCliente: ['', Validators.required],
+    status: ['Pendente' as StatusPedido, Validators.required],
     itens: this.fb.array([this.criarItem()]),
   });
+
+  protected readonly statusOpcoes: DropdownOpcao[] = STATUS_PEDIDO.map((status) => ({
+    valor: status,
+    rotulo: status,
+  }));
 
   protected readonly linhas = computed<PedidoLinha[]>(() =>
     this.pedidosLista().map((pedido) => ({
@@ -145,19 +154,36 @@ export class PedidosComponent {
 
     this.carregandoListagem.set(false);
 
-    if (this.route.snapshot.queryParamMap.get('novo') === 'true') {
-      await this.abrirModal();
+    const params = this.route.snapshot.queryParamMap;
+    const novo = params.get('novo') === 'true';
+    const clienteId = params.get('cliente');
+    const editarId = params.get('editar');
+
+    if (novo) {
+      await this.abrirModal(clienteId ?? undefined);
+    } else if (editarId) {
+      const pedido = this.pedidosLista().find((item) => item.id === editarId);
+      if (pedido) {
+        await this.editar(pedido);
+      }
+    }
+
+    if (novo || clienteId !== null || editarId !== null) {
+      await this.limparQueryParams();
     }
   }
 
-  protected async abrirModal(): Promise<void> {
+  protected async abrirModal(clienteId?: string): Promise<void> {
     this.editandoId.set(null);
-    this.form.reset({ idCliente: '' });
+    this.form.reset({ idCliente: '', status: 'Pendente' });
     this.limparItens();
     this.modalAberto.set(true);
 
     try {
       await this.carregarOpcoes();
+      if (clienteId) {
+        this.form.controls.idCliente.setValue(clienteId);
+      }
     } catch (error) {
       this.toast.erro(this.mensagemDeErro(error));
     }
@@ -284,6 +310,7 @@ export class PedidosComponent {
     const valores = this.form.getRawValue();
     const dados = {
       id_cliente: valores.idCliente,
+      status: valores.status,
       itens: valores.itens.map((item) => ({
         id_produto: item.idProduto,
         quantidade: Number(item.quantidade),
@@ -368,14 +395,38 @@ export class PedidosComponent {
     await this.carregarOpcoes();
     this.editandoId.set(pedido.id);
     this.form.controls.idCliente.setValue(pedido.id_cliente);
-    this.limparItens();
-    pedido.itens.forEach((item) =>
+    this.form.controls.status.setValue(this.statusValido(pedido.status));
+    this.definirItens(pedido.itens);
+    this.modalAberto.set(true);
+  }
+
+  private definirItens(itens: Pedido['itens']): void {
+    while (this.itens.length > 0) {
+      this.itens.removeAt(0);
+    }
+    itens.forEach((item) =>
       this.itens.push(this.fb.nonNullable.group({
         idProduto: [item.id_produto, Validators.required],
         quantidade: [String(item.quantidade), [Validators.required, Validators.pattern(/^[1-9]\d*$/)]],
       })),
     );
-    this.modalAberto.set(true);
+    if (this.itens.length === 0) {
+      this.itens.push(this.criarItem());
+    }
+  }
+
+  private statusValido(status?: string): StatusPedido {
+    return STATUS_PEDIDO.includes(status as StatusPedido)
+      ? (status as StatusPedido)
+      : 'Pendente';
+  }
+
+  private async limparQueryParams(): Promise<void> {
+    await this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {},
+      replaceUrl: true,
+    });
   }
 
   private criarItem() {

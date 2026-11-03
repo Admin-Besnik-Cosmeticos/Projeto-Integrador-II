@@ -63,6 +63,16 @@
         />
       </div>
 
+      <div class="formulario-pedido__campo">
+        <label for="pedido-status">Status</label>
+        <app-dropdown
+          placeholder="Selecione o status"
+          ariaLabel="Selecionar status"
+          [opcoes]="statusOpcoes"
+          formControlName="status"
+        />
+      </div>
+
       <div class="formulario-pedido__itens-cabecalho">
         <h3>Itens do pedido</h3>
         <button class="formulario-pedido__adicionar" type="button" (click)="adicionarItem()">
@@ -130,6 +140,7 @@
     <div class="pedido-detalhes" modalCorpo>
       <p><strong>Pedido:</strong> {{ identificador(pedido.id) }}</p>
       <p><strong>Cliente:</strong> {{ pedido.cliente ?? nomeCliente(pedido.id_cliente) }}</p>
+      <p><strong>Status:</strong> {{ pedido.status ?? 'Pendente' }}</p>
       <h3>Itens</h3>
       @for (item of pedido.itens; track $index) {
       <div class="pedido-detalhes__item">

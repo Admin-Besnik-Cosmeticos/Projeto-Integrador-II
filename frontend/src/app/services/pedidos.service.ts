@@ -2,6 +2,17 @@ import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
+export const STATUS_PEDIDO = [
+  'Pendente',
+  'Em Preparo',
+  'Pago',
+  'Enviado',
+  'Entregue',
+  'Cancelado',
+] as const;
+
+export type StatusPedido = (typeof STATUS_PEDIDO)[number];
+
 export interface PedidoItem {
   id?: string;
   id_produto: string;
@@ -17,7 +28,7 @@ export interface Pedido {
   data_pedido: string;
   itens: PedidoItem[];
   total: number;
-  status?: string;
+  status?: StatusPedido;
 }
 
 export interface PedidoItemSalvar {
@@ -27,6 +38,7 @@ export interface PedidoItemSalvar {
 
 export interface PedidoSalvar {
   id_cliente: string;
+  status?: StatusPedido;
   itens: PedidoItemSalvar[];
 }
 
