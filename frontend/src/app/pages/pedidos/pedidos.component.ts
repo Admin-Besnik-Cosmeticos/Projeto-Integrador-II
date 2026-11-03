@@ -29,6 +29,7 @@ import {
 } from '../../services/pedidos.service';
 import { Produto, ProdutosService } from '../../services/produtos.service';
 import { ToastService } from '../../services/toast.service';
+import { normalizarTexto } from '../../utils/texto';
 
 interface PedidoLinha {
   /** Codigo exibido na tabela (ex.: #A1B2C3D4). */
@@ -69,14 +70,6 @@ const MESES = [
   'novembro',
   'dezembro',
 ] as const;
-
-function normalizarTexto(valor: string): string {
-  return valor
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .trim();
-}
 
 function formatarDataInput(data: Date): string {
   const ano = data.getFullYear();
