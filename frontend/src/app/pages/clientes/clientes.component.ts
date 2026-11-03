@@ -3,6 +3,11 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ModalAcoesDirective, ModalComponent } from '../../components/modal/modal.component';
 import { ErrorMessageComponent } from '../../components/error-message/error-message.component';
+import {
+  FiltroCampo,
+  FiltroComponent,
+  FiltroValores,
+} from '../../components/filtro/filtro.component';
 import { PageHeaderComponent } from '../../components/page-header/page-header.component';
 import {
   TabelaAcao,
@@ -12,6 +17,7 @@ import {
 } from '../../components/tabela/tabela.component';
 import { Cliente, ClientesError, ClientesService } from '../../services/clientes.service';
 import { ToastService } from '../../services/toast.service';
+import { normalizarTexto } from '../../utils/texto';
 
 interface ClienteLinha {
   id: string;
@@ -30,6 +36,7 @@ interface ClienteLinha {
     ModalAcoesDirective,
     ReactiveFormsModule,
     ErrorMessageComponent,
+    FiltroComponent,
     PageHeaderComponent,
   ],
   templateUrl: './clientes.component.html',
@@ -88,7 +95,29 @@ export class ClientesComponent {
   protected readonly carregandoListagem = signal(true);
   protected readonly erroListagem = signal('');
   protected readonly clientesLista = signal<Cliente[]>([]);
-  protected readonly termoBusca = signal('');
+
+  private readonly filtrosAplicados = signal<FiltroValores>({});
+
+  protected readonly camposFiltro: FiltroCampo[] = [
+    {
+      id: 'nome',
+      rotulo: 'Nome',
+      tipo: 'texto',
+      placeholder: 'Buscar por nome...',
+    },
+    {
+      id: 'telefone',
+      rotulo: 'Telefone',
+      tipo: 'texto',
+      placeholder: 'Buscar por telefone...',
+    },
+    {
+      id: 'endereco',
+      rotulo: 'Endereço',
+      tipo: 'texto',
+      placeholder: 'Estado, cidade ou endereço de entrega',
+    },
+  ];
 
   protected readonly linhas = computed<ClienteLinha[]>(() =>
     this.clientesLista().map((cliente) => ({
@@ -102,26 +131,41 @@ export class ClientesComponent {
   );
 
   protected readonly linhasFiltradas = computed<ClienteLinha[]>(() => {
-    const termo = this.termoBusca().trim().toLowerCase();
-    if (!termo) {
-      return this.linhas();
-    }
+    const filtros = this.filtrosAplicados();
+    const nome = normalizarTexto(filtros['nome'] ?? '');
+    const telefone = (filtros['telefone'] ?? '').replace(/\D/g, '');
+    const endereco = normalizarTexto(filtros['endereco'] ?? '');
 
-    return this.linhas().filter((linha) =>
-      [linha.nome, linha.telefone, linha.cidade, linha.estado]
-        .join(' ')
-        .toLowerCase()
-        .includes(termo),
-    );
+    return this.linhas().filter((linha) => {
+      if (nome && !normalizarTexto(linha.nome).includes(nome)) {
+        return false;
+      }
+      if (telefone && !linha.telefone.replace(/\D/g, '').includes(telefone)) {
+        return false;
+      }
+      if (
+        endereco &&
+        !normalizarTexto(
+          [linha.estado, linha.cidade, linha.endereco_entrega].join(' '),
+        ).includes(endereco)
+      ) {
+        return false;
+      }
+      return true;
+    });
   });
 
+  protected readonly filtroAtivo = computed(() =>
+    Object.values(this.filtrosAplicados()).some((valor) => valor.trim() !== ''),
+  );
+
   protected readonly mensagemVazio = computed(() =>
-    this.termoBusca().trim() ? 'Nenhuma cliente encontrada' : 'Nenhuma cliente cadastrada',
+    this.filtroAtivo() ? 'Nenhuma cliente encontrada' : 'Nenhuma cliente cadastrada',
   );
 
   protected readonly descricaoVazio = computed(() =>
-    this.termoBusca().trim()
-      ? 'Ajuste a busca para encontrar outras clientes.'
+    this.filtroAtivo()
+      ? 'Ajuste os filtros para encontrar outras clientes.'
       : 'Cadastre a primeira cliente para vê-la aqui.',
   );
 
@@ -183,11 +227,12 @@ export class ClientesComponent {
     }
   }
 
-  protected atualizarBusca(evento: Event): void {
-    const alvo = evento.target;
-    if (alvo instanceof HTMLInputElement) {
-      this.termoBusca.set(alvo.value);
-    }
+  protected buscarFiltros(valores: FiltroValores): void {
+    this.filtrosAplicados.set(valores);
+  }
+
+  protected limparFiltros(): void {
+    this.filtrosAplicados.set({});
   }
 
   protected abrirModal(): void {

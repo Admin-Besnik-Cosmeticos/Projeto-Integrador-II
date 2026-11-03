@@ -24,6 +24,12 @@ type Vista = {
   erroListagem(): string;
   clientesLista(): (typeof ANA)[];
   linhas(): unknown[];
+  linhasFiltradas(): Array<{ id: string; nome: string; estado: string }>;
+  camposFiltro: { id: string; rotulo: string; tipo: string }[];
+  buscarFiltros(valores: Record<string, string>): void;
+  limparFiltros(): void;
+  filtroAtivo(): boolean;
+  mensagemVazio(): string;
   modalAberto(): boolean;
   modalExclusaoAberto(): boolean;
   editandoId(): string | null;
@@ -99,6 +105,85 @@ describe('ClientesComponent', () => {
       endereco_entrega: ANA.endereco.endereco_entrega,
     });
     expect(vista.erroListagem()).toBe('');
+  });
+
+  it('configura os filtros de nome, telefone e endereco', async () => {
+    const { vista } = await criarComponente();
+    const campos = vista.camposFiltro;
+
+    expect(campos.map((campo) => campo.id)).toEqual(['nome', 'telefone', 'endereco']);
+    expect(campos.every((campo) => campo.tipo === 'texto')).toBe(true);
+  });
+
+  it('filtra por nome sem diferenciar acentos', async () => {
+    const { vista } = await criarComponente();
+
+    vista.buscarFiltros({ nome: 'bruna' });
+    expect(vista.linhasFiltradas().map((linha) => linha.nome)).toEqual(['Bruna Costa']);
+
+    vista.buscarFiltros({ nome: 'ANA' });
+    expect(vista.linhasFiltradas().map((linha) => linha.nome)).toEqual(['Ana Ribeiro']);
+
+    vista.buscarFiltros({ nome: 'carla' });
+    expect(vista.linhasFiltradas()).toHaveLength(0);
+    expect(vista.mensagemVazio()).toBe('Nenhuma cliente encontrada');
+  });
+
+  it('filtra por telefone ignorando a formatacao', async () => {
+    const { vista } = await criarComponente();
+
+    vista.buscarFiltros({ telefone: '2198888' });
+    expect(vista.linhasFiltradas().map((linha) => linha.nome)).toEqual(['Bruna Costa']);
+
+    vista.buscarFiltros({ telefone: '(11) 99999-8888' });
+    expect(vista.linhasFiltradas().map((linha) => linha.nome)).toEqual(['Ana Ribeiro']);
+  });
+
+  it('filtra por estado, cidade ou endereco de entrega', async () => {
+    const { vista } = await criarComponente();
+
+    vista.buscarFiltros({ endereco: 'RJ' });
+    expect(vista.linhasFiltradas().map((linha) => linha.nome)).toEqual(['Bruna Costa']);
+
+    vista.buscarFiltros({ endereco: 'sao paulo' });
+    expect(vista.linhasFiltradas().map((linha) => linha.nome)).toEqual(['Ana Ribeiro']);
+
+    vista.buscarFiltros({ endereco: 'atlantica' });
+    expect(vista.linhasFiltradas().map((linha) => linha.nome)).toEqual(['Bruna Costa']);
+
+    vista.buscarFiltros({ endereco: 'curitiba' });
+    expect(vista.linhasFiltradas()).toHaveLength(0);
+  });
+
+  it('combina os filtros de nome, telefone e endereco', async () => {
+    const { vista } = await criarComponente();
+
+    vista.buscarFiltros({ nome: 'bruna', telefone: '219', endereco: 'RJ' });
+    expect(vista.linhasFiltradas().map((linha) => linha.nome)).toEqual(['Bruna Costa']);
+
+    vista.buscarFiltros({ nome: 'bruna', endereco: 'SP' });
+    expect(vista.linhasFiltradas()).toHaveLength(0);
+  });
+
+  it('limpa os filtros e volta a exibir todas as clientes', async () => {
+    const { vista } = await criarComponente();
+
+    vista.buscarFiltros({ nome: 'bruna' });
+    expect(vista.linhasFiltradas()).toHaveLength(1);
+    expect(vista.filtroAtivo()).toBe(true);
+
+    vista.limparFiltros();
+    expect(vista.linhasFiltradas()).toHaveLength(2);
+    expect(vista.filtroAtivo()).toBe(false);
+    expect(vista.mensagemVazio()).toBe('Nenhuma cliente cadastrada');
+  });
+
+  it('nao refaz a requisicao ao aplicar filtros', async () => {
+    const { vista, http } = await criarComponente();
+
+    vista.buscarFiltros({ nome: 'ana' });
+    expect(vista.linhasFiltradas()).toHaveLength(1);
+    http.expectNone(API_URL);
   });
 
   it('nao exibe paginacao com dez clientes ou menos', async () => {
