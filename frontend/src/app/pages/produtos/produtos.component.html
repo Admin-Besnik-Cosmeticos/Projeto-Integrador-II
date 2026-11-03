@@ -10,32 +10,12 @@
     <app-error-message [mensagem]="erroListagem()" (tentarNovamente)="carregarProdutos()" />
   }
 
-  <label class="produtos__busca" for="busca-produtos">
-    <svg
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      width="16"
-      height="16"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-    >
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" />
-    </svg>
-    <input
-      class="produtos__busca-entrada"
-      id="busca-produtos"
-      type="search"
-      placeholder="Buscar por nome..."
-      aria-label="Buscar produtos por nome"
-      autocomplete="off"
-      [value]="termoBusca()"
-      (input)="atualizarBusca($event)"
-    />
-  </label>
+  <app-filtro
+    [campos]="camposFiltro()"
+    [buscando]="carregandoListagem()"
+    (buscar)="buscarFiltros($event)"
+    (limpar)="limparFiltros()"
+  />
 
   <app-tabela
     [colunas]="colunas"

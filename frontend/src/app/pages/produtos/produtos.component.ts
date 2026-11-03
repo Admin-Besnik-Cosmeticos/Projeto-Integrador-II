@@ -2,6 +2,12 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ModalAcoesDirective, ModalComponent } from '../../components/modal/modal.component';
 import { ErrorMessageComponent } from '../../components/error-message/error-message.component';
+import {
+  FiltroCampo,
+  FiltroComponent,
+  FiltroOpcao,
+  FiltroValores,
+} from '../../components/filtro/filtro.component';
 import { PageHeaderComponent } from '../../components/page-header/page-header.component';
 import {
   TabelaAcao,
@@ -11,6 +17,7 @@ import {
 } from '../../components/tabela/tabela.component';
 import { Produto, ProdutosError, ProdutosService } from '../../services/produtos.service';
 import { ToastService } from '../../services/toast.service';
+import { normalizarTexto } from '../../utils/texto';
 
 type StatusEstoque = 'Esgotado' | 'Baixo Estoque' | 'Em Estoque';
 
@@ -33,6 +40,7 @@ const LIMITE_ESTOQUE_BAIXO = 5;
     ModalAcoesDirective,
     ReactiveFormsModule,
     ErrorMessageComponent,
+    FiltroComponent,
     PageHeaderComponent,
   ],
   templateUrl: './produtos.component.html',
@@ -66,7 +74,70 @@ export class ProdutosComponent {
   protected readonly erroListagem = signal('');
   protected readonly produtosLista = signal<Produto[]>([]);
 
-  protected readonly termoBusca = signal('');
+  private readonly filtrosAplicados = signal<FiltroValores>({});
+
+  protected readonly categorias = computed<string[]>(() =>
+    [
+      ...new Set(
+        this.produtosLista()
+          .map((produto) => produto.categoria?.trim())
+          .filter((categoria): categoria is string => Boolean(categoria)),
+      ),
+    ].sort((a, b) => a.localeCompare(b, 'pt-BR')),
+  );
+
+  protected readonly possuiSemCategoria = computed(() =>
+    this.produtosLista().some((produto) => !produto.categoria?.trim()),
+  );
+
+  protected readonly camposFiltro = computed<FiltroCampo[]>(() => {
+    const categorias: FiltroOpcao[] = this.categorias().map((categoria) => ({
+      valor: categoria,
+      rotulo: categoria,
+    }));
+    if (this.possuiSemCategoria()) {
+      categorias.push({ valor: '__sem_categoria__', rotulo: 'Sem categoria' });
+    }
+
+    return [
+      {
+        id: 'busca',
+        rotulo: 'Nome do produto',
+        tipo: 'texto',
+        placeholder: 'Buscar por nome...',
+      },
+      {
+        id: 'categoria',
+        rotulo: 'Categoria',
+        tipo: 'select',
+        placeholder: 'Todas as categorias',
+        opcoes: categorias,
+      },
+      {
+        id: 'status',
+        rotulo: 'Status',
+        tipo: 'select',
+        placeholder: 'Todos os status',
+        opcoes: [
+          { valor: 'Esgotado', rotulo: 'Esgotado' },
+          { valor: 'Baixo Estoque', rotulo: 'Baixo Estoque' },
+          { valor: 'Em Estoque', rotulo: 'Em Estoque' },
+        ],
+      },
+      {
+        id: 'ordenacao',
+        rotulo: 'Ordenação',
+        tipo: 'select',
+        placeholder: 'Padrão',
+        opcoes: [
+          { valor: 'preco-desc', rotulo: 'Preço (maior)' },
+          { valor: 'preco-asc', rotulo: 'Preço (menor)' },
+          { valor: 'estoque-desc', rotulo: 'Estoque (maior)' },
+          { valor: 'estoque-asc', rotulo: 'Estoque (menor)' },
+        ],
+      },
+    ];
+  });
 
   protected readonly modalAberto = signal(false);
   protected readonly salvando = signal(false);
@@ -95,20 +166,55 @@ export class ProdutosComponent {
   );
 
   protected readonly linhasFiltradas = computed<ProdutoLinha[]>(() => {
-    const termo = this.termoBusca().trim().toLowerCase();
-    if (!termo) {
-      return this.linhas();
+    const filtros = this.filtrosAplicados();
+    const busca = normalizarTexto(filtros['busca'] ?? '');
+    const categoria = filtros['categoria'] ?? '';
+    const status = filtros['status'] ?? '';
+
+    const filtradas = this.linhas().filter((linha) => {
+      if (busca && !normalizarTexto(linha.nome).includes(busca)) {
+        return false;
+      }
+      if (categoria === '__sem_categoria__') {
+        if (linha.categoria) {
+          return false;
+        }
+      } else if (categoria && linha.categoria !== categoria) {
+        return false;
+      }
+      if (status && linha.status !== status) {
+        return false;
+      }
+      return true;
+    });
+
+    const ordenacao = filtros['ordenacao'] ?? '';
+    if (ordenacao === 'preco-desc') {
+      return [...filtradas].sort((a, b) => b.preco - a.preco);
     }
-    return this.linhas().filter((linha) => linha.nome.toLowerCase().includes(termo));
+    if (ordenacao === 'preco-asc') {
+      return [...filtradas].sort((a, b) => a.preco - b.preco);
+    }
+    if (ordenacao === 'estoque-desc') {
+      return [...filtradas].sort((a, b) => b.estoque - a.estoque);
+    }
+    if (ordenacao === 'estoque-asc') {
+      return [...filtradas].sort((a, b) => a.estoque - b.estoque);
+    }
+    return filtradas;
   });
 
+  protected readonly filtroAtivo = computed(() =>
+    Object.values(this.filtrosAplicados()).some((valor) => valor.trim() !== ''),
+  );
+
   protected readonly mensagemVazio = computed(() =>
-    this.termoBusca().trim() ? 'Nenhum produto encontrado' : 'Nenhum produto cadastrado',
+    this.filtroAtivo() ? 'Nenhum produto encontrado' : 'Nenhum produto cadastrado',
   );
 
   protected readonly descricaoVazio = computed(() =>
-    this.termoBusca().trim()
-      ? 'Ajuste a busca para encontrar outros produtos.'
+    this.filtroAtivo()
+      ? 'Ajuste os filtros para encontrar outros produtos.'
       : 'Cadastre o primeiro produto para vê-lo aqui.',
   );
 
@@ -162,13 +268,12 @@ export class ProdutosComponent {
     }
   }
 
-  protected atualizarBusca(evento: Event): void {
-    const alvo = evento.target;
-    if (!(alvo instanceof HTMLInputElement)) {
-      return;
-    }
+  protected buscarFiltros(valores: FiltroValores): void {
+    this.filtrosAplicados.set(valores);
+  }
 
-    this.termoBusca.set(alvo.value);
+  protected limparFiltros(): void {
+    this.filtrosAplicados.set({});
   }
 
   protected abrirModal(): void {

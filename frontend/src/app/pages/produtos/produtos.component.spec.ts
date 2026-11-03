@@ -99,8 +99,18 @@ type Vista = {
     estoque: number;
     status: string;
   }>;
-  linhasFiltradas(): Array<{ id: string; nome: string }>;
-  termoBusca(): string;
+  linhasFiltradas(): Array<{
+    id: string;
+    nome: string;
+    categoria: string;
+    preco: number;
+    estoque: number;
+  }>;
+  camposFiltro(): { id: string; rotulo: string; tipo: string; opcoes?: { valor: string }[] }[];
+  buscarFiltros(valores: Record<string, string>): void;
+  limparFiltros(): void;
+  filtroAtivo(): boolean;
+  mensagemVazio(): string;
   modalAberto(): boolean;
   modalExclusaoAberto(): boolean;
   editandoId(): string | null;
@@ -176,24 +186,117 @@ describe('ProdutosComponent', () => {
     expect(vista.linhas()[7].categoria).toBe('');
   });
 
-  it('filtra por nome', async () => {
-    const { fixture, vista, native } = await criarComponente();
+  it('configura os filtros de nome, categoria, status e ordenacao', async () => {
+    const { vista } = await criarComponente();
+    const campos = vista.camposFiltro();
 
-    const entrada = native.querySelector<HTMLInputElement>('#busca-produtos');
-    expect(entrada).not.toBeNull();
+    expect(campos.map((campo) => campo.id)).toEqual([
+      'busca',
+      'categoria',
+      'status',
+      'ordenacao',
+    ]);
 
-    entrada!.value = 'a';
-    entrada!.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
+    const categoria = campos.find((campo) => campo.id === 'categoria');
+    expect(categoria?.opcoes?.map((opcao) => opcao.valor)).toEqual([
+      'Maquiagem',
+      'Skincare',
+      '__sem_categoria__',
+    ]);
 
-    expect(vista.termoBusca()).toBe('a');
+    const ordenacao = campos.find((campo) => campo.id === 'ordenacao');
+    expect(ordenacao?.opcoes?.map((opcao) => opcao.valor)).toEqual([
+      'preco-desc',
+      'preco-asc',
+      'estoque-desc',
+      'estoque-asc',
+    ]);
+  });
 
-    entrada!.value = 'batom';
-    entrada!.dispatchEvent(new Event('input'));
-    fixture.detectChanges();
+  it('filtra por nome sem diferenciar acentos', async () => {
+    const { vista } = await criarComponente();
 
-    expect(vista.linhasFiltradas().length).toBe(1);
-    expect(vista.linhasFiltradas()[0].nome).toBe('Batom Cremoso');
+    vista.buscarFiltros({ busca: 'serum' });
+    expect(vista.linhasFiltradas().map((linha) => linha.nome)).toEqual([
+      'Sérum Facial Vitamina C',
+    ]);
+
+    vista.buscarFiltros({ busca: 'batom' });
+    expect(vista.linhasFiltradas().map((linha) => linha.nome)).toEqual(['Batom Cremoso']);
+  });
+
+  it('filtra por categoria, incluindo produtos sem categoria', async () => {
+    const { vista } = await criarComponente();
+
+    vista.buscarFiltros({ categoria: 'Skincare' });
+    expect(vista.linhasFiltradas().map((linha) => linha.nome)).toEqual([
+      'Sérum Facial Vitamina C',
+      'Protetor Solar FPS 60',
+      'Hidratante Facial',
+      'Água Micelar',
+    ]);
+
+    vista.buscarFiltros({ categoria: '__sem_categoria__' });
+    expect(vista.linhasFiltradas().map((linha) => linha.nome)).toEqual(['Gloss Labial']);
+  });
+
+  it('filtra por status de estoque', async () => {
+    const { vista } = await criarComponente();
+
+    vista.buscarFiltros({ status: 'Esgotado' });
+    expect(vista.linhasFiltradas().map((linha) => linha.nome)).toEqual([
+      'Base Líquida Matte',
+    ]);
+
+    vista.buscarFiltros({ status: 'Baixo Estoque' });
+    expect(vista.linhasFiltradas().map((linha) => linha.nome)).toEqual([
+      'Protetor Solar FPS 60',
+    ]);
+  });
+
+  it('ordena por preco do maior para o menor e vice-versa', async () => {
+    const { vista } = await criarComponente();
+
+    vista.buscarFiltros({ ordenacao: 'preco-desc' });
+    expect(vista.linhasFiltradas()[0].nome).toBe('Sérum Facial Vitamina C');
+    expect(vista.linhasFiltradas()[9].nome).toBe('Gloss Labial');
+
+    vista.buscarFiltros({ ordenacao: 'preco-asc' });
+    expect(vista.linhasFiltradas()[0].nome).toBe('Gloss Labial');
+    expect(vista.linhasFiltradas()[9].nome).toBe('Sérum Facial Vitamina C');
+  });
+
+  it('ordena por estoque do maior para o menor e vice-versa', async () => {
+    const { vista } = await criarComponente();
+
+    vista.buscarFiltros({ ordenacao: 'estoque-desc' });
+    expect(vista.linhasFiltradas()[0].nome).toBe('Hidratante Facial');
+    expect(vista.linhasFiltradas()[0].estoque).toBe(60);
+    expect(vista.linhasFiltradas()[9].nome).toBe('Base Líquida Matte');
+    expect(vista.linhasFiltradas()[9].estoque).toBe(0);
+
+    vista.buscarFiltros({ ordenacao: 'estoque-asc' });
+    expect(vista.linhasFiltradas()[0].nome).toBe('Base Líquida Matte');
+    expect(vista.linhasFiltradas()[9].nome).toBe('Hidratante Facial');
+  });
+
+  it('combina filtros e volta a exibir todos ao limpar', async () => {
+    const { vista } = await criarComponente();
+
+    vista.buscarFiltros({ categoria: 'Maquiagem', ordenacao: 'preco-asc' });
+    expect(vista.linhasFiltradas().map((linha) => linha.nome)).toEqual([
+      'Delineador Líquido',
+      'Batom Cremoso',
+      'Pó Compacto',
+      'Máscara de Cílios',
+      'Base Líquida Matte',
+    ]);
+    expect(vista.filtroAtivo()).toBe(true);
+
+    vista.limparFiltros();
+    expect(vista.linhasFiltradas()).toHaveLength(10);
+    expect(vista.filtroAtivo()).toBe(false);
+    expect(vista.mensagemVazio()).toBe('Nenhum produto cadastrado');
   });
 
   it('exibe mensagem de erro com botao para tentar novamente', async () => {
