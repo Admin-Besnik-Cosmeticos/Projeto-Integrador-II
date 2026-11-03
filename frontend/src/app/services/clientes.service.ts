@@ -21,7 +21,12 @@ export interface ClienteSalvar {
   endereco: ClienteEndereco;
 }
 
-export type ClientesErrorCode = 'invalid_data' | 'not_found' | 'network_error' | 'unexpected_error';
+export type ClientesErrorCode =
+  | 'invalid_data'
+  | 'not_found'
+  | 'in_use'
+  | 'network_error'
+  | 'unexpected_error';
 
 export class ClientesError extends Error {
   constructor(
@@ -125,7 +130,12 @@ export class ClientesService {
           ? body.erro
           : 'Nao foi possivel concluir a operacao.';
 
-      const code = error.status === 400 ? 'invalid_data' : 'unexpected_error';
+      const code =
+        error.status === 400
+          ? 'invalid_data'
+          : error.status === 409
+            ? 'in_use'
+            : 'unexpected_error';
       return new ClientesError(message, code);
     }
 

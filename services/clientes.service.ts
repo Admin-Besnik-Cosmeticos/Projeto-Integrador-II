@@ -34,8 +34,16 @@ export class ClienteNaoEncontradoError extends Error {
   }
 }
 
+export class ClienteEmUsoError extends Error {
+  constructor(message = 'Cliente possui pedidos vinculados e nao pode ser removido.') {
+    super(message);
+    this.name = 'ClienteEmUsoError';
+  }
+}
+
 const LIMITE_NOME = 255;
 const LIMITE_TELEFONE = 20;
+const CODIGO_FK_VIOLADA = '23503';
 const REGEX_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function normalizarId(idInput: unknown): string {
@@ -197,11 +205,19 @@ export async function updateCliente(
 export async function removeCliente(idInput: unknown): Promise<void> {
   const id = normalizarId(idInput);
 
-  const rows = (await sql`
-    DELETE FROM clientes
-    WHERE id = ${id}
-    RETURNING id
-  `) as unknown as Array<{ id: string }>;
+  let rows: Array<{ id: string }>;
+  try {
+    rows = (await sql`
+      DELETE FROM clientes
+      WHERE id = ${id}
+      RETURNING id
+    `) as unknown as Array<{ id: string }>;
+  } catch (err) {
+    if ((err as { code?: unknown } | null)?.code === CODIGO_FK_VIOLADA) {
+      throw new ClienteEmUsoError();
+    }
+    throw err;
+  }
 
   if (!rows[0]) {
     throw new ClienteNaoEncontradoError();

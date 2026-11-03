@@ -119,4 +119,16 @@ describe('ClientesService', () => {
 
     await expect(promise).rejects.toMatchObject({ code: 'network_error' });
   });
+
+  it('mapeia 409 para cliente em uso', async () => {
+    const service = TestBed.inject(ClientesService);
+    const http = TestBed.inject(HttpTestingController);
+    const mensagem = 'Cliente possui pedidos vinculados e nao pode ser removido.';
+
+    const promise = service.remover(CLIENTE.id);
+    const req = http.expectOne(`/api/clientes?id=${CLIENTE.id}`);
+    req.flush({ erro: mensagem }, { status: 409, statusText: 'Conflict' });
+
+    await expect(promise).rejects.toMatchObject({ code: 'in_use', message: mensagem });
+  });
 });

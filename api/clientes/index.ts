@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import {
+  ClienteEmUsoError,
   ClienteInvalidoError,
   ClienteNaoEncontradoError,
   createCliente,
@@ -61,6 +62,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     if (err instanceof ClienteNaoEncontradoError) {
       return res.status(404).json({ erro: err.message });
+    }
+    if (err instanceof ClienteEmUsoError) {
+      return res.status(409).json({ erro: err.message });
     }
     if (err instanceof SyntaxError) {
       return res.status(400).json({ erro: 'Corpo da requisicao invalido.' });
