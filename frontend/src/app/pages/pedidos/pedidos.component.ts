@@ -158,6 +158,7 @@ export class PedidosComponent {
     const novo = params.get('novo') === 'true';
     const clienteId = params.get('cliente');
     const editarId = params.get('editar');
+    const visualizarId = params.get('visualizar');
 
     if (novo) {
       await this.abrirModal(clienteId ?? undefined);
@@ -166,9 +167,20 @@ export class PedidosComponent {
       if (pedido) {
         await this.editar(pedido);
       }
+    } else if (visualizarId) {
+      const pedido = this.pedidosLista().find((item) => item.id === visualizarId);
+      if (pedido) {
+        this.pedidoSelecionado.set(pedido);
+        this.modalVisualizacaoAberto.set(true);
+      }
     }
 
-    if (novo || clienteId !== null || editarId !== null) {
+    if (
+      novo ||
+      clienteId !== null ||
+      editarId !== null ||
+      visualizarId !== null
+    ) {
       await this.limparQueryParams();
     }
   }

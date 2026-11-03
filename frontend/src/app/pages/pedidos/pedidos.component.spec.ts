@@ -41,6 +41,8 @@ const PEDIDO = {
 
 interface Vista {
   modalAberto(): boolean;
+  modalVisualizacaoAberto(): boolean;
+  pedidoSelecionado(): typeof PEDIDO | null;
   editandoId(): string | null;
   carregandoListagem(): boolean;
   form: FormGroup;
@@ -142,6 +144,15 @@ describe('PedidosComponent', () => {
     expect(vista.form.controls['idCliente'].value).toBe(CLIENTE.id);
     expect(vista.form.controls['status'].value).toBe('Pago');
     expect((vista.form.controls['itens'] as unknown as { length: number }).length).toBe(1);
+    expect(navegacoes).toHaveLength(1);
+  });
+
+  it('abre a visualizacao ao acessar /pedidos?visualizar=<id>', async () => {
+    const { vista } = await criarComponente({ visualizar: PEDIDO.id });
+
+    expect(vista.modalVisualizacaoAberto()).toBe(true);
+    expect(vista.pedidoSelecionado()?.id).toBe(PEDIDO.id);
+    expect(vista.modalAberto()).toBe(false);
     expect(navegacoes).toHaveLength(1);
   });
 
