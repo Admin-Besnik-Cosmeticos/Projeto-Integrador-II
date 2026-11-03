@@ -1,6 +1,7 @@
 import {
   Component,
   ElementRef,
+  OnInit,
   input,
   output,
   signal,
@@ -22,6 +23,8 @@ export interface FiltroCampo {
   placeholder?: string;
   /** Opcoes exibidas quando o tipo e `select`. */
   opcoes?: FiltroOpcao[];
+  /** Valor preenchido na primeira renderizacao. */
+  valorInicial?: string;
 }
 
 export type FiltroValores = Record<string, string>;
@@ -32,7 +35,7 @@ export type FiltroValores = Record<string, string>;
   templateUrl: './filtro.component.html',
   styleUrl: './filtro.component.scss',
 })
-export class FiltroComponent {
+export class FiltroComponent implements OnInit {
   readonly campos = input.required<FiltroCampo[]>();
   readonly buscando = input(false);
   readonly rotuloBuscar = input('Buscar');
@@ -43,6 +46,16 @@ export class FiltroComponent {
   protected readonly valores = signal<FiltroValores>({});
 
   private readonly formulario = viewChild<ElementRef<HTMLFormElement>>('formulario');
+
+  ngOnInit(): void {
+    const iniciais: FiltroValores = {};
+    for (const campo of this.campos()) {
+      if (campo.valorInicial !== undefined) {
+        iniciais[campo.id] = campo.valorInicial;
+      }
+    }
+    this.valores.set(iniciais);
+  }
 
   protected valor(id: string): string {
     return this.valores()[id] ?? '';

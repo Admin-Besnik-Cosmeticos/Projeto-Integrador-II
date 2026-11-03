@@ -81,6 +81,19 @@ describe('FiltroComponent', () => {
     ).toBe('');
   });
 
+  it('preenche os campos com o valor inicial configurado', () => {
+    const outro = TestBed.createComponent(FiltroComponent);
+    outro.componentRef.setInput('campos', [
+      { id: 'inicio', rotulo: 'Início', tipo: 'data', valorInicial: '2026-10-01' },
+    ] as FiltroCampo[]);
+    outro.detectChanges();
+
+    const campo = (outro.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
+      '#filtro-inicio',
+    );
+    expect(campo?.value).toBe('2026-10-01');
+  });
+
   it('desabilita o botao de buscar enquanto a pesquisa esta em andamento', () => {
     fixture.componentRef.setInput('buscando', true);
     fixture.detectChanges();
