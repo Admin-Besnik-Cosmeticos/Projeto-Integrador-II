@@ -59,17 +59,38 @@ export class PedidosError extends Error {
 }
 
 const PEDIDOS_ENDPOINT = '/api/pedidos';
+const CACHE_TTL_MS = 30_000;
 
 @Injectable({ providedIn: 'root' })
 export class PedidosService {
   private readonly http = inject(HttpClient);
+  private pedidosCache: { dados: Pedido[]; atualizadoEm: number } | null = null;
+  private pedidosEmCarregamento: Promise<Pedido[]> | null = null;
 
-  async listar(): Promise<Pedido[]> {
+  async listar(ignorarCache = false): Promise<Pedido[]> {
+    if (!ignorarCache && this.pedidosCache && Date.now() - this.pedidosCache.atualizadoEm < CACHE_TTL_MS) {
+      return this.pedidosCache.dados;
+    }
+    if (!ignorarCache && this.pedidosEmCarregamento) {
+      return this.pedidosEmCarregamento;
+    }
+
+    this.pedidosEmCarregamento = this.buscarLista();
+    try {
+      return await this.pedidosEmCarregamento;
+    } finally {
+      this.pedidosEmCarregamento = null;
+    }
+  }
+
+  private async buscarLista(): Promise<Pedido[]> {
     try {
       const response = await firstValueFrom(
         this.http.get<{ pedidos?: Pedido[] }>(PEDIDOS_ENDPOINT),
       );
-      return response.pedidos ?? [];
+      const pedidos = response.pedidos ?? [];
+      this.pedidosCache = { dados: pedidos, atualizadoEm: Date.now() };
+      return pedidos;
     } catch (error) {
       throw this.toPedidosError(error);
     }
@@ -80,6 +101,7 @@ export class PedidosService {
       const response = await firstValueFrom(
         this.http.post<{ pedido?: Pedido }>(PEDIDOS_ENDPOINT, dados),
       );
+      this.limparCache();
       return this.obterPedido(response);
     } catch (error) {
       throw this.toPedidosError(error);
@@ -94,6 +116,7 @@ export class PedidosService {
           dados,
         ),
       );
+      this.limparCache();
       return this.obterPedido(response);
     } catch (error) {
       throw this.toPedidosError(error);
@@ -105,9 +128,15 @@ export class PedidosService {
       await firstValueFrom(
         this.http.delete<void>(`${PEDIDOS_ENDPOINT}?id=${encodeURIComponent(id)}`),
       );
+      this.limparCache();
     } catch (error) {
       throw this.toPedidosError(error);
     }
+
+  }
+
+  private limparCache(): void {
+    this.pedidosCache = null;
   }
 
   private obterPedido(response: { pedido?: Pedido }): Pedido {

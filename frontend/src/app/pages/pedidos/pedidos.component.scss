@@ -50,7 +50,7 @@
 .pedidos__periodo {
   color: #8d7396;
   font-size: 0.78rem;
-  margin: -0.25rem 0 1rem;
+  margin: -0.25rem 0 1.5rem;
 }
 
 .formulario-pedido {
@@ -190,6 +190,120 @@
   display: flex;
   justify-content: space-between;
   padding-top: 1rem;
+}
+
+.pedido-detalhes {
+  display: grid;
+  gap: 1.25rem;
+  color: #4f2558;
+  font-size: 1rem;
+}
+
+.pedido-detalhes__resumo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid #eadfea;
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, #fcf3fb, #fff);
+}
+
+.pedido-detalhes__rotulo {
+  display: block;
+  margin-bottom: 0.35rem;
+  color: #8d7396;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pedido-detalhes__numero {
+  color: #5d2d63;
+  font-size: 1.35rem;
+}
+
+.pedido-detalhes__status {
+  padding: 0.45rem 0.8rem;
+  border-radius: 999px;
+  background: #f4def5;
+  color: #7e328d;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.pedido-detalhes__cliente {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0 0.25rem;
+}
+
+.pedido-detalhes__cliente strong {
+  font-size: 1.05rem;
+}
+
+.pedido-detalhes__itens-cabecalho {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.pedido-detalhes__itens-cabecalho h3 {
+  color: #4f2558;
+  font-size: 1.1rem;
+}
+
+.pedido-detalhes__itens-cabecalho span {
+  color: #8d7396;
+  font-size: 0.82rem;
+}
+
+.pedido-detalhes__itens {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.pedido-detalhes__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #eadfea;
+  border-radius: 0.6rem;
+  background: #faf6fa;
+}
+
+.pedido-detalhes__item > div {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.pedido-detalhes__item span {
+  color: #8d7396;
+  font-size: 0.85rem;
+}
+
+.pedido-detalhes__item > strong {
+  color: #5d2d63;
+  font-size: 1rem;
+  white-space: nowrap;
+}
+
+.pedido-detalhes__total {
+  margin-top: 0.5rem;
+  padding-top: 1.25rem;
+  color: #5d2d63;
+  font-size: 1rem;
+}
+
+.pedido-detalhes__total strong {
+  color: #4f2558;
+  font-size: 1.35rem;
 }
 
 .formulario-pedido__acoes {

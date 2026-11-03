@@ -8,7 +8,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(405).json({ erro: 'Metodo nao permitido' });
     }
 
-    const dashboard = await getDashboard(normalizarPeriodo(req.query?.periodo));
+    const periodo = req.query?.periodo;
+    const dashboard = await getDashboard(normalizarPeriodo(periodo));
     return res.status(200).json(dashboard);
   } catch (err) {
     console.error('[api/dashboard] erro:', err);

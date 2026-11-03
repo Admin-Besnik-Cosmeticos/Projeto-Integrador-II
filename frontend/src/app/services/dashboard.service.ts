@@ -48,16 +48,40 @@ export class DashboardError extends Error {
 }
 
 const DASHBOARD_ENDPOINT = '/api/dashboard';
+const CACHE_TTL_MS = 30_000;
 
 @Injectable({ providedIn: 'root' })
 export class DashboardService {
   private readonly http = inject(HttpClient);
+  private readonly cache = new Map<DashboardPeriodo, { dados: DashboardResposta; atualizadoEm: number }>();
+  private readonly carregamentos = new Map<DashboardPeriodo, Promise<DashboardResposta>>();
 
-  async obter(periodo: DashboardPeriodo = 'total'): Promise<DashboardResposta> {
+  async obter(periodo: DashboardPeriodo = 'total', ignorarCache = false): Promise<DashboardResposta> {
+    const cached = this.cache.get(periodo);
+    if (!ignorarCache && cached && Date.now() - cached.atualizadoEm < CACHE_TTL_MS) {
+      return cached.dados;
+    }
+    const carregamento = this.carregamentos.get(periodo);
+    if (!ignorarCache && carregamento) {
+      return carregamento;
+    }
+
+    const request = this.buscar(periodo);
+    this.carregamentos.set(periodo, request);
     try {
-      return await firstValueFrom(
+      return await request;
+    } finally {
+      this.carregamentos.delete(periodo);
+    }
+  }
+
+  private async buscar(periodo: DashboardPeriodo): Promise<DashboardResposta> {
+    try {
+      const dados = await firstValueFrom(
         this.http.get<DashboardResposta>(DASHBOARD_ENDPOINT, { params: { periodo } }),
       );
+      this.cache.set(periodo, { dados, atualizadoEm: Date.now() });
+      return dados;
     } catch (error) {
       throw this.toDashboardError(error);
     }

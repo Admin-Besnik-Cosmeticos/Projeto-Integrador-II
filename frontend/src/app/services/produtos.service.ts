@@ -31,17 +31,38 @@ export class ProdutosError extends Error {
 }
 
 const PRODUTOS_ENDPOINT = '/api/produtos';
+const CACHE_TTL_MS = 30_000;
 
 @Injectable({ providedIn: 'root' })
 export class ProdutosService {
   private readonly http = inject(HttpClient);
+  private produtosCache: { dados: Produto[]; atualizadoEm: number } | null = null;
+  private produtosEmCarregamento: Promise<Produto[]> | null = null;
 
-  async listar(): Promise<Produto[]> {
+  async listar(ignorarCache = false): Promise<Produto[]> {
+    if (!ignorarCache && this.produtosCache && Date.now() - this.produtosCache.atualizadoEm < CACHE_TTL_MS) {
+      return this.produtosCache.dados;
+    }
+    if (!ignorarCache && this.produtosEmCarregamento) {
+      return this.produtosEmCarregamento;
+    }
+
+    this.produtosEmCarregamento = this.buscarLista();
+    try {
+      return await this.produtosEmCarregamento;
+    } finally {
+      this.produtosEmCarregamento = null;
+    }
+  }
+
+  private async buscarLista(): Promise<Produto[]> {
     try {
       const response = await firstValueFrom(
         this.http.get<{ produtos?: Produto[] }>(PRODUTOS_ENDPOINT),
       );
-      return response.produtos ?? [];
+      const produtos = response.produtos ?? [];
+      this.produtosCache = { dados: produtos, atualizadoEm: Date.now() };
+      return produtos;
     } catch (error) {
       throw this.toProdutosError(error);
     }
@@ -52,6 +73,7 @@ export class ProdutosService {
       const response = await firstValueFrom(
         this.http.post<{ produto?: Produto }>(PRODUTOS_ENDPOINT, dados),
       );
+      this.limparCache();
       return this.obterProduto(response);
     } catch (error) {
       throw this.toProdutosError(error);
@@ -66,6 +88,7 @@ export class ProdutosService {
           dados,
         ),
       );
+      this.limparCache();
       return this.obterProduto(response);
     } catch (error) {
       throw this.toProdutosError(error);
@@ -77,9 +100,15 @@ export class ProdutosService {
       await firstValueFrom(
         this.http.delete<void>(`${PRODUTOS_ENDPOINT}?id=${encodeURIComponent(id)}`),
       );
+      this.limparCache();
     } catch (error) {
       throw this.toProdutosError(error);
     }
+
+  }
+
+  private limparCache(): void {
+    this.produtosCache = null;
   }
 
   private obterProduto(response: { produto?: Produto }): Produto {

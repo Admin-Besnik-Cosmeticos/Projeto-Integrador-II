@@ -1,10 +1,6 @@
 <section class="pedidos">
-  <app-page-header
-    titulo="Pedidos"
-    descricao="Gerencie os pedidos da loja Besnik Cosméticos."
-    acao="Novo Pedido"
-    (acaoSelecionada)="abrirModal()"
-  />
+  <app-page-header titulo="Pedidos" descricao="Gerencie os pedidos da loja Besnik Cosméticos." acao="Novo Pedido"
+    (acaoSelecionada)="abrirModal()" />
 
   @if (erroListagem()) {
   <app-error-message [mensagem]="erroListagem()" (tentarNovamente)="carregar()" />
@@ -35,16 +31,13 @@
       <strong>{{ formatarMoeda(indicadores().ticketMedio) }}</strong>
       }
     </article>
+    <p class="pedidos__periodo">{{ descricaoPeriodo() }}</p>
   </div>
 
-  <p class="pedidos__periodo">{{ descricaoPeriodo() }}</p>
 
-  <app-filtro
-    [campos]="camposFiltro"
-    [buscando]="carregandoListagem()"
-    (buscar)="buscarFiltros($event)"
-    (limpar)="limparFiltros()"
-  />
+
+  <app-filtro [campos]="camposFiltro" [buscando]="carregandoListagem()" (buscar)="buscarFiltros($event)"
+    (limpar)="limparFiltros()" />
 
   <app-tabela [colunas]="colunas" [dados]="linhasFiltradas()" [acoes]="acoes" [carregando]="carregandoListagem()"
     mensagemVazio="Nenhum pedido encontrado" descricaoVazio="Ajuste os filtros ou cadastre um novo pedido."
@@ -55,23 +48,14 @@
     <form class="formulario-pedido" modalCorpo [formGroup]="form" (ngSubmit)="salvarPedido()" novalidate>
       <div class="formulario-pedido__campo">
         <label for="pedido-cliente">Cliente</label>
-        <app-dropdown
-          placeholder="Selecione o cliente"
-          buscaPlaceholder="Buscar cliente..."
-          ariaLabel="Selecionar cliente"
-          [opcoes]="opcoesClientes()"
-          formControlName="idCliente"
-        />
+        <app-dropdown placeholder="Selecione o cliente" buscaPlaceholder="Buscar cliente..."
+          ariaLabel="Selecionar cliente" [opcoes]="opcoesClientes()" formControlName="idCliente" />
       </div>
 
       <div class="formulario-pedido__campo">
         <label for="pedido-status">Status</label>
-        <app-dropdown
-          placeholder="Selecione o status"
-          ariaLabel="Selecionar status"
-          [opcoes]="statusOpcoes"
-          formControlName="status"
-        />
+        <app-dropdown placeholder="Selecione o status" ariaLabel="Selecionar status" [opcoes]="statusOpcoes"
+          formControlName="status" />
       </div>
 
       <div class="formulario-pedido__itens-cabecalho">
@@ -87,22 +71,16 @@
         <div class="formulario-pedido__item" [formGroupName]="$index">
           <div class="formulario-pedido__campo">
             <label [for]="'produto-' + $index">Produto</label>
-            <app-dropdown
-              [opcoes]="opcoesProdutos($index)"
-              placeholder="Selecione o produto"
-              buscaPlaceholder="Buscar produto..."
-              ariaLabel="Selecionar produto"
-              formControlName="idProduto"
-              (valorSelecionado)="selecionarProduto($index, $event)"
-            />
+            <app-dropdown [opcoes]="opcoesProdutos($index)" placeholder="Selecione o produto"
+              buscaPlaceholder="Buscar produto..." ariaLabel="Selecionar produto" formControlName="idProduto"
+              (valorSelecionado)="selecionarProduto($index, $event)" />
           </div>
           <div class="formulario-pedido__campo formulario-pedido__campo--quantidade">
             <label [for]="'quantidade-' + $index">Quantidade</label>
             <input class="formulario-pedido__quantidade"
               [class.formulario-pedido__quantidade--invalida]="quantidadeExcedente($index)"
-              [id]="'quantidade-' + $index" type="number"
-              min="1" [max]="estoqueProduto($index) || null" step="1" inputmode="numeric"
-              formControlName="quantidade" (input)="atualizarQuantidade($index)"
+              [id]="'quantidade-' + $index" type="number" min="1" [max]="estoqueProduto($index) || null" step="1"
+              inputmode="numeric" formControlName="quantidade" (input)="atualizarQuantidade($index)"
               [attr.aria-invalid]="quantidadeExcedente($index) ? 'true' : null" />
             @if (quantidadeExcedente($index)) {
             <small class="formulario-pedido__erro">
@@ -136,20 +114,40 @@
     </div>
   </app-modal>
 
-  <app-modal titulo="Detalhes do Pedido" [aberto]="modalVisualizacaoAberto()" (fechar)="fecharVisualizacao()">
+  <app-modal tamanho="grande" titulo="Detalhes do Pedido" [aberto]="modalVisualizacaoAberto()"
+    (fechar)="fecharVisualizacao()">
     @if (pedidoSelecionado(); as pedido) {
     <div class="pedido-detalhes" modalCorpo>
-      <p><strong>Pedido:</strong> {{ identificador(pedido.id) }}</p>
-      <p><strong>Cliente:</strong> {{ pedido.cliente ?? nomeCliente(pedido.id_cliente) }}</p>
-      <p><strong>Status:</strong> {{ pedido.status ?? 'Pendente' }}</p>
-      <h3>Itens</h3>
-      @for (item of pedido.itens; track $index) {
-      <div class="pedido-detalhes__item">
-        <span>{{ item.produto ?? nomeProduto(item.id_produto) }} × {{ item.quantidade }}</span>
-        <strong>{{ formatarMoeda(item.quantidade * item.preco_unitario) }}</strong>
+      <div class="pedido-detalhes__resumo">
+        <div>
+          <span class="pedido-detalhes__rotulo">Número do pedido</span>
+          <strong class="pedido-detalhes__numero">{{ identificador(pedido.id) }}</strong>
+        </div>
+        <span class="pedido-detalhes__status">{{ pedido.status ?? 'Pendente' }}</span>
       </div>
-      }
-      <p class="pedido-detalhes__total"><strong>Total: {{ formatarMoeda(pedido.total) }}</strong></p>
+      <div class="pedido-detalhes__cliente">
+        <span class="pedido-detalhes__rotulo">Cliente</span>
+        <strong>{{ pedido.cliente ?? nomeCliente(pedido.id_cliente) }}</strong>
+      </div>
+      <div class="pedido-detalhes__itens-cabecalho">
+        <h3>Itens do pedido</h3>
+        <span>{{ pedido.itens.length }} {{ pedido.itens.length === 1 ? 'item' : 'itens' }}</span>
+      </div>
+      <div class="pedido-detalhes__itens">
+        @for (item of pedido.itens; track $index) {
+        <div class="pedido-detalhes__item">
+          <div>
+            <strong>{{ item.produto ?? nomeProduto(item.id_produto) }}</strong>
+            <span>{{ item.quantidade }} × {{ formatarMoeda(item.preco_unitario) }}</span>
+          </div>
+          <strong>{{ formatarMoeda(item.quantidade * item.preco_unitario) }}</strong>
+        </div>
+        }
+      </div>
+      <div class="pedido-detalhes__total">
+        <span>Total do pedido</span>
+        <strong>{{ formatarMoeda(pedido.total) }}</strong>
+      </div>
     </div>
     }
   </app-modal>

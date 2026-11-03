@@ -39,10 +39,13 @@ export class ClientesError extends Error {
 }
 
 const CLIENTES_ENDPOINT = '/api/clientes';
+const CACHE_TTL_MS = 30_000;
 
 @Injectable({ providedIn: 'root' })
 export class ClientesService {
   private readonly http = inject(HttpClient);
+  private clientesCache: { dados: Cliente[]; atualizadoEm: number } | null = null;
+  private clientesEmCarregamento: Promise<Cliente[]> | null = null;
 
   async obter(id: string): Promise<Cliente> {
     try {
@@ -57,12 +60,30 @@ export class ClientesService {
     }
   }
 
-  async listar(): Promise<Cliente[]> {
+  async listar(ignorarCache = false): Promise<Cliente[]> {
+    if (!ignorarCache && this.clientesCache && Date.now() - this.clientesCache.atualizadoEm < CACHE_TTL_MS) {
+      return this.clientesCache.dados;
+    }
+    if (!ignorarCache && this.clientesEmCarregamento) {
+      return this.clientesEmCarregamento;
+    }
+
+    this.clientesEmCarregamento = this.buscarLista();
+    try {
+      return await this.clientesEmCarregamento;
+    } finally {
+      this.clientesEmCarregamento = null;
+    }
+  }
+
+  private async buscarLista(): Promise<Cliente[]> {
     try {
       const response = await firstValueFrom(
         this.http.get<{ clientes?: Cliente[] }>(CLIENTES_ENDPOINT),
       );
-      return response.clientes ?? [];
+      const clientes = response.clientes ?? [];
+      this.clientesCache = { dados: clientes, atualizadoEm: Date.now() };
+      return clientes;
     } catch (error) {
       throw this.toClientesError(error);
     }
@@ -73,6 +94,7 @@ export class ClientesService {
       const response = await firstValueFrom(
         this.http.post<{ cliente?: Cliente }>(CLIENTES_ENDPOINT, dados),
       );
+      this.limparCache();
       return this.obterCliente(response);
     } catch (error) {
       throw this.toClientesError(error);
@@ -87,6 +109,7 @@ export class ClientesService {
           dados,
         ),
       );
+      this.limparCache();
       return this.obterCliente(response);
     } catch (error) {
       throw this.toClientesError(error);
@@ -98,9 +121,15 @@ export class ClientesService {
       await firstValueFrom(
         this.http.delete<void>(`${CLIENTES_ENDPOINT}?id=${encodeURIComponent(id)}`),
       );
+      this.limparCache();
     } catch (error) {
       throw this.toClientesError(error);
     }
+
+  }
+
+  private limparCache(): void {
+    this.clientesCache = null;
   }
 
   private obterCliente(response: { cliente?: Cliente }): Cliente {
