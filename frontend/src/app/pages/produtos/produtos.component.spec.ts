@@ -170,7 +170,8 @@ describe('ProdutosComponent', () => {
     expect(vista.erroListagem()).toBe('');
     expect(vista.linhas().length).toBe(10);
     expect(vista.linhas()[0].status).toBe('Esgotado');
-    expect(vista.linhas()[1].status).toBe('Baixo Estoque');
+    expect(vista.linhas()[1].status).toBe('Em Estoque');
+    expect(vista.linhas()[4].status).toBe('Baixo Estoque');
     expect(vista.linhas()[2].status).toBe('Em Estoque');
     expect(vista.linhas()[7].categoria).toBe('');
   });
