@@ -12,19 +12,19 @@
 
   <div class="pedidos__indicadores">
     <article class="indicador">
-      <span class="indicador__rotulo">Total de vendas</span>
+      <span class="indicador__rotulo">Faturamento</span>
       @if (carregandoListagem()) {
       <span class="indicador__esqueleto"></span>
       } @else {
-      <strong>{{ formatarMoeda(indicadores().totalVendas) }}</strong>
+      <strong>{{ formatarMoeda(indicadores().faturamento) }}</strong>
       }
     </article>
     <article class="indicador">
-      <span class="indicador__rotulo">Pedidos do mês</span>
+      <span class="indicador__rotulo">Total de Pedidos</span>
       @if (carregandoListagem()) {
       <span class="indicador__esqueleto"></span>
       } @else {
-      <strong>{{ indicadores().pedidosMes }}</strong>
+      <strong>{{ indicadores().totalPedidos }}</strong>
       }
     </article>
     <article class="indicador">
@@ -36,6 +36,8 @@
       }
     </article>
   </div>
+
+  <p class="pedidos__periodo">{{ descricaoPeriodo() }}</p>
 
   <app-filtro
     [campos]="camposFiltro"

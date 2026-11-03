@@ -43,12 +43,32 @@ interface PedidoLinha {
 }
 
 interface IndicadoresPedidos {
-  totalVendas: number;
-  pedidosMes: number;
+  faturamento: number;
+  totalPedidos: number;
   ticketMedio: number;
 }
 
+interface Periodo {
+  inicio: string;
+  fim: string;
+}
+
 const STATUS_FATURAVEIS: StatusPedido[] = ['Pago', 'Enviado', 'Entregue'];
+
+const MESES = [
+  'janeiro',
+  'fevereiro',
+  'marco',
+  'abril',
+  'maio',
+  'junho',
+  'julho',
+  'agosto',
+  'setembro',
+  'outubro',
+  'novembro',
+  'dezembro',
+] as const;
 
 function normalizarTexto(valor: string): string {
   return valor
@@ -58,23 +78,119 @@ function normalizarTexto(valor: string): string {
     .trim();
 }
 
-function mesmoMes(data: string, referencia: Date): boolean {
-  const valor = new Date(data);
-  return (
-    !Number.isNaN(valor.getTime()) &&
-    valor.getMonth() === referencia.getMonth() &&
-    valor.getFullYear() === referencia.getFullYear()
-  );
+function formatarDataInput(data: Date): string {
+  const ano = data.getFullYear();
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  const dia = String(data.getDate()).padStart(2, '0');
+  return `${ano}-${mes}-${dia}`;
+}
+
+function ultimoDiaDoMes(data: Date): number {
+  return new Date(data.getFullYear(), data.getMonth() + 1, 0).getDate();
+}
+
+function trimestreAtual(referencia = new Date()): Periodo {
+  const primeiroMes = Math.floor(referencia.getMonth() / 3) * 3;
+  return {
+    inicio: formatarDataInput(new Date(referencia.getFullYear(), primeiroMes, 1)),
+    fim: formatarDataInput(new Date(referencia.getFullYear(), primeiroMes + 3, 0)),
+  };
 }
 
 function dataLocal(data: string): string {
   const valor = new Date(data);
-  if (Number.isNaN(valor.getTime())) {
-    return '';
+  return Number.isNaN(valor.getTime()) ? '' : formatarDataInput(valor);
+}
+
+function dentroDoPeriodo(data: string, inicio: string, fim: string): boolean {
+  const dia = dataLocal(data);
+  if (!dia) {
+    return false;
   }
-  const dia = String(valor.getDate()).padStart(2, '0');
-  const mes = String(valor.getMonth() + 1).padStart(2, '0');
-  return `${valor.getFullYear()}-${mes}-${dia}`;
+  if (inicio && dia < inicio) {
+    return false;
+  }
+  if (fim && dia > fim) {
+    return false;
+  }
+  return true;
+}
+
+function formatarDataCurta(data: Date): string {
+  const dia = String(data.getDate()).padStart(2, '0');
+  const mes = String(data.getMonth() + 1).padStart(2, '0');
+  return `${dia}/${mes}/${data.getFullYear()}`;
+}
+
+function mesmoDia(a: Date, b: Date): boolean {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
+  );
+}
+
+function descreverPeriodo(
+  inicio: string,
+  fim: string,
+  referencia = new Date(),
+): string {
+  if (!inicio && !fim) {
+    return 'Valores de todos os pedidos.';
+  }
+
+  const dataInicio = inicio ? new Date(`${inicio}T00:00:00`) : null;
+  const dataFim = fim ? new Date(`${fim}T00:00:00`) : null;
+
+  if (!dataInicio) {
+    return `Valores até ${formatarDataCurta(dataFim as Date)}.`;
+  }
+
+  if (!dataFim) {
+    return `Valores a partir de ${formatarDataCurta(dataInicio)}.`;
+  }
+
+  const mesInteiro =
+    dataInicio.getFullYear() === dataFim.getFullYear() &&
+    dataInicio.getMonth() === dataFim.getMonth() &&
+    dataInicio.getDate() === 1 &&
+    dataFim.getDate() === ultimoDiaDoMes(dataFim);
+
+  if (mesInteiro) {
+    const mes = MESES[dataInicio.getMonth()];
+    const mesAtual =
+      dataInicio.getFullYear() === referencia.getFullYear() &&
+      dataInicio.getMonth() === referencia.getMonth();
+    return mesAtual
+      ? `Valores do mês atual (${mes} de ${dataInicio.getFullYear()}).`
+      : `Valores de ${mes} de ${dataInicio.getFullYear()}.`;
+  }
+
+  const primeiroMesTrimestre = Math.floor(dataInicio.getMonth() / 3) * 3;
+  const inicioTrimestre = new Date(
+    dataInicio.getFullYear(),
+    primeiroMesTrimestre,
+    1,
+  );
+  const fimTrimestre = new Date(
+    dataInicio.getFullYear(),
+    primeiroMesTrimestre + 3,
+    0,
+  );
+  const trimestreInteiro =
+    mesmoDia(dataInicio, inicioTrimestre) && mesmoDia(dataFim, fimTrimestre);
+
+  if (trimestreInteiro) {
+    const trimestre = Math.floor(dataInicio.getMonth() / 3) + 1;
+    const trimestreAtual =
+      trimestre === Math.floor(referencia.getMonth() / 3) + 1 &&
+      dataInicio.getFullYear() === referencia.getFullYear();
+    return trimestreAtual
+      ? `Valores do trimestre atual (${formatarDataCurta(dataInicio)} a ${formatarDataCurta(dataFim)}).`
+      : `Valores do ${trimestre}º trimestre de ${dataInicio.getFullYear()}.`;
+  }
+
+  return `Valores de ${formatarDataCurta(dataInicio)} a ${formatarDataCurta(dataFim)}.`;
 }
 
 @Component({
@@ -157,6 +273,8 @@ export class PedidosComponent {
     rotulo: status,
   }));
 
+  private readonly periodoInicial = trimestreAtual();
+
   protected readonly camposFiltro: FiltroCampo[] = [
     {
       id: 'codigo',
@@ -171,9 +289,16 @@ export class PedidosComponent {
       placeholder: 'Nome do cliente',
     },
     {
-      id: 'data',
-      rotulo: 'Data do pedido',
+      id: 'dataInicial',
+      rotulo: 'Data inicial',
       tipo: 'data',
+      valorInicial: this.periodoInicial.inicio,
+    },
+    {
+      id: 'dataFinal',
+      rotulo: 'Data final',
+      tipo: 'data',
+      valorInicial: this.periodoInicial.fim,
     },
     {
       id: 'status',
@@ -185,8 +310,11 @@ export class PedidosComponent {
   ];
 
   // Filtros so sao aplicados apos o clique em Buscar; a listagem e carregada
-  // uma unica vez na primeira renderizacao.
-  private readonly filtrosAplicados = signal<FiltroValores>({});
+  // uma unica vez na primeira renderizacao. O periodo padrao e o trimestre atual.
+  private readonly filtrosAplicados = signal<FiltroValores>({
+    dataInicial: this.periodoInicial.inicio,
+    dataFinal: this.periodoInicial.fim,
+  });
 
   protected readonly linhas = computed<PedidoLinha[]>(() =>
     this.pedidosLista().map((pedido) => ({
@@ -204,7 +332,8 @@ export class PedidosComponent {
     const filtros = this.filtrosAplicados();
     const codigo = normalizarTexto(filtros['codigo'] ?? '').replace(/^#/, '');
     const cliente = normalizarTexto(filtros['cliente'] ?? '');
-    const data = filtros['data'] ?? '';
+    const dataInicial = filtros['dataInicial'] ?? '';
+    const dataFinal = filtros['dataFinal'] ?? '';
     const status = filtros['status'] ?? '';
 
     return this.linhas().filter((linha) => {
@@ -214,7 +343,7 @@ export class PedidosComponent {
       if (cliente && !normalizarTexto(linha.cliente).includes(cliente)) {
         return false;
       }
-      if (data && dataLocal(linha.data) !== data) {
+      if (!dentroDoPeriodo(linha.data, dataInicial, dataFinal)) {
         return false;
       }
       if (status && linha.status !== status) {
@@ -224,18 +353,22 @@ export class PedidosComponent {
     });
   });
 
+  protected readonly descricaoPeriodo = computed(() => {
+    const filtros = this.filtrosAplicados();
+    return descreverPeriodo(filtros['dataInicial'] ?? '', filtros['dataFinal'] ?? '');
+  });
+
   protected readonly indicadores = computed<IndicadoresPedidos>(() => {
     const linhas = this.linhasFiltradas();
     const faturaveis = linhas.filter((linha) =>
       STATUS_FATURAVEIS.includes(linha.status),
     );
-    const totalVendas = faturaveis.reduce((soma, linha) => soma + linha.total, 0);
-    const referencia = new Date();
+    const faturamento = faturaveis.reduce((soma, linha) => soma + linha.total, 0);
 
     return {
-      totalVendas,
-      pedidosMes: linhas.filter((linha) => mesmoMes(linha.data, referencia)).length,
-      ticketMedio: faturaveis.length > 0 ? totalVendas / faturaveis.length : 0,
+      faturamento,
+      totalPedidos: linhas.length,
+      ticketMedio: faturaveis.length > 0 ? faturamento / faturaveis.length : 0,
     };
   });
 

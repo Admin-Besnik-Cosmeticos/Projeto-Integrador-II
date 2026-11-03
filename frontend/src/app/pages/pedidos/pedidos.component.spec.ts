@@ -63,7 +63,7 @@ interface Vista {
   editandoId(): string | null;
   carregandoListagem(): boolean;
   form: FormGroup;
-  camposFiltro: { id: string; rotulo: string; tipo: string }[];
+  camposFiltro: { id: string; rotulo: string; tipo: string; valorInicial?: string }[];
   buscarFiltros(valores: Record<string, string>): void;
   limparFiltros(): void;
   linhasFiltradas(): Array<{
@@ -72,7 +72,12 @@ interface Vista {
     status: string;
     total: number;
   }>;
-  indicadores(): { totalVendas: number; pedidosMes: number; ticketMedio: number };
+  descricaoPeriodo(): string;
+  indicadores(): {
+    faturamento: number;
+    totalPedidos: number;
+    ticketMedio: number;
+  };
   abrirModal(): Promise<void>;
   salvarPedido(): Promise<void>;
 }
@@ -211,15 +216,33 @@ describe('PedidosComponent', () => {
     expect(toasts()[0].tipo).toBe('sucesso');
   });
 
-  it('configura os filtros de codigo, cliente, data e status', async () => {
+  it('configura os filtros de codigo, cliente, datas e status', async () => {
     const { vista } = await criarComponente();
 
     expect(vista.camposFiltro.map((campo) => campo.id)).toEqual([
       'codigo',
       'cliente',
-      'data',
+      'dataInicial',
+      'dataFinal',
       'status',
     ]);
+  });
+
+  it('aplica o trimestre atual como periodo padrao', async () => {
+    const { vista } = await criarComponente();
+    const agora = new Date();
+    const primeiroMes = Math.floor(agora.getMonth() / 3) * 3;
+    const inicio = new Date(agora.getFullYear(), primeiroMes, 1);
+    const fim = new Date(agora.getFullYear(), primeiroMes + 3, 0);
+    const formatar = (data: Date): string =>
+      `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`;
+
+    const campoInicial = vista.camposFiltro.find((campo) => campo.id === 'dataInicial');
+    const campoFinal = vista.camposFiltro.find((campo) => campo.id === 'dataFinal');
+
+    expect(campoInicial?.valorInicial).toBe(formatar(inicio));
+    expect(campoFinal?.valorInicial).toBe(formatar(fim));
+    expect(vista.descricaoPeriodo()).toContain('trimestre atual');
   });
 
   it('so aplica o filtro ao clicar em buscar, sem refazer a requisicao', async () => {
@@ -229,6 +252,7 @@ describe('PedidosComponent', () => {
       PEDIDO_CANCELADO,
     ]);
 
+    vista.limparFiltros();
     expect(vista.linhasFiltradas()).toHaveLength(3);
 
     vista.buscarFiltros({ status: 'Pago' });
@@ -238,7 +262,7 @@ describe('PedidosComponent', () => {
     http.expectNone('/api/pedidos');
   });
 
-  it('filtra por codigo, cliente, data e status', async () => {
+  it('filtra por codigo, cliente, intervalo de datas e status', async () => {
     const { vista } = await criarComponente({}, [
       PEDIDO,
       PEDIDO_ENTREGUE,
@@ -251,11 +275,36 @@ describe('PedidosComponent', () => {
     vista.buscarFiltros({ cliente: 'bruna' });
     expect(vista.linhasFiltradas().map((linha) => linha.status)).toEqual(['Cancelado']);
 
-    vista.buscarFiltros({ data: '2026-10-30' });
-    expect(vista.linhasFiltradas().map((linha) => linha.status)).toEqual(['Entregue']);
+    vista.buscarFiltros({ dataInicial: '2026-10-28', dataFinal: '2026-10-30' });
+    expect(vista.linhasFiltradas().map((linha) => linha.status)).toEqual([
+      'Pago',
+      'Entregue',
+    ]);
+
+    vista.buscarFiltros({ dataInicial: '2026-10-31' });
+    expect(vista.linhasFiltradas()).toHaveLength(0);
+
+    vista.buscarFiltros({ dataFinal: '2026-10-27' });
+    expect(vista.linhasFiltradas().map((linha) => linha.status)).toEqual(['Cancelado']);
 
     vista.buscarFiltros({ status: 'Pago' });
     expect(vista.linhasFiltradas().map((linha) => linha.status)).toEqual(['Pago']);
+  });
+
+  it('descreve o mes quando o intervalo cobre um mes inteiro', async () => {
+    const { vista } = await criarComponente();
+    const agora = new Date();
+    const inicio = new Date(agora.getFullYear(), agora.getMonth(), 1);
+    const fim = new Date(agora.getFullYear(), agora.getMonth() + 1, 0);
+    const formatar = (data: Date): string =>
+      `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`;
+
+    vista.buscarFiltros({
+      dataInicial: formatar(inicio),
+      dataFinal: formatar(fim),
+    });
+
+    expect(vista.descricaoPeriodo()).toContain('mês atual');
   });
 
   it('volta a exibir todos os pedidos ao limpar os filtros', async () => {
@@ -266,12 +315,15 @@ describe('PedidosComponent', () => {
 
     vista.limparFiltros();
     expect(vista.linhasFiltradas()).toHaveLength(2);
+    expect(vista.descricaoPeriodo()).toContain('todos os pedidos');
   });
 
-  it('calcula total de vendas, pedidos do mes e ticket medio', async () => {
+  it('calcula faturamento, total de pedidos e ticket medio do periodo', async () => {
     const agora = new Date();
     const dataAtual = new Date(agora.getFullYear(), agora.getMonth(), 10, 12).toISOString();
     const dataAnterior = new Date(agora.getFullYear(), agora.getMonth() - 1, 10, 12).toISOString();
+    const formatar = (data: Date): string =>
+      `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`;
 
     const { fixture, vista } = await criarComponente({}, [
       { ...PEDIDO, data_pedido: dataAtual, status: 'Pago', total: 100 },
@@ -280,9 +332,14 @@ describe('PedidosComponent', () => {
       { ...PEDIDO, id: '77777777-7777-7777-7777-777777777777', data_pedido: dataAnterior, status: 'Pendente', total: 20 },
     ]);
 
+    vista.buscarFiltros({
+      dataInicial: formatar(new Date(agora.getFullYear(), agora.getMonth() - 1, 1)),
+      dataFinal: formatar(new Date(agora.getFullYear(), agora.getMonth() + 1, 0)),
+    });
+
     expect(vista.indicadores()).toEqual({
-      totalVendas: 160,
-      pedidosMes: 3,
+      faturamento: 160,
+      totalPedidos: 4,
       ticketMedio: 80,
     });
 
@@ -290,6 +347,8 @@ describe('PedidosComponent', () => {
       /\u00a0/g,
       ' ',
     );
+    expect(texto).toContain('Faturamento');
+    expect(texto).toContain('Total de Pedidos');
     expect(texto).toContain('R$ 160,00');
     expect(texto).toContain('R$ 80,00');
   });
